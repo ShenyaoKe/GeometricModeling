@@ -9,6 +9,9 @@
 #include <QTimer>
 #include <QTime>
 //#include <QGLFunctions>
+#include <cstdio>
+#include <cstdlib>
+//#include <crtdefs>
 #include <vector>
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
@@ -27,14 +30,15 @@ static GLfloat proj_mat[16] = {
 	0,0,0,1
 };
 
-static GLfloat* points_verts;// vertices vbo
+static GLfloat* points_verts = nullptr;// vertices vbo
 static GLfloat* points_colors;// Texture coordinates vbo
 
 //static int box_vbo_size;// Triangle face numbers
 static Matrix4D matrix;// Transform matrix
 
-static GLSLProgram* curve_shader;
 static GLSLProgram* points_shader;// OpenGL shader program
+static GLSLProgram* curve_shaders[4];
+//static GLSLProgram* lagrange_shader;// OpenGL shader program
 static int vertex_position;// Uniform matrix location
 static int vertex_colour;// Uniform matrix location
 //////////////////////////////////////////////////////////////////////////
@@ -57,6 +61,11 @@ public:
 public slots:
 	//void resetCamera();
 	void initParas();
+	void clearVertex();
+	void changeCurveType(int new_cv_type = 0);
+	void setDegree(int val = 1);
+	void setSegment(int val = 20);
+	void writePoints(const char *filename);
 protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;
@@ -73,13 +82,14 @@ public:
 protected:
 	//orthoCamera *view_cam;
 private:
-	int fps;
-
-	QTime process_time;
 	int m_lastMousePos[2];
 private:
-	int display_mode = 0;
-	int cv_op_mode = DRAWING_MODE;
+	int cv_op_mode;
+	int cv_type;
+	GLint curve_degree;
+	GLint curve_degree_loc;
+	GLint curve_seg;
+	GLint curve_seg_loc;
 	friend class MainWindow;
 };
 

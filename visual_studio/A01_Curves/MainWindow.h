@@ -26,6 +26,8 @@ public:
 public slots:
 	/*void renderLater();
 	void renderNow();*/
+private slots:
+	void exportToFile();
 
 protected:
 	//bool event(QEvent *event) Q_DECL_OVERRIDE;

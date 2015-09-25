@@ -1,7 +1,9 @@
 #include "OGLViewer.h"
 
 OGLViewer::OGLViewer(QWidget *parent)
-	: QOpenGLWidget(parent), fps(30)
+	: QOpenGLWidget(parent),
+	cv_op_mode(DRAWING_MODE), cv_type(0),
+	curve_degree(3), curve_seg(20)
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -12,11 +14,10 @@ OGLViewer::OGLViewer(QWidget *parent)
 	this->setFormat(format);
 
 	// Link timer trigger
-	process_time.start();
-	QTimer *timer = new QTimer(this);
-	/*timer->setSingleShot(false);*/
+	/*QTimer *timer = new QTimer(this);
+	/ *timer->setSingleShot(false);* /
 	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-	timer->start(0);
+	timer->start(0);*/
 
 
 	// Read obj file
@@ -27,8 +28,8 @@ OGLViewer::OGLViewer(QWidget *parent)
 	exportPointVBO(points_verts);
 
 	// Init camera
-	proj_mat[0] = 2.0 / static_cast<GLfloat>(width());
-	proj_mat[5] = 2.0 / static_cast<GLfloat>(height());
+	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width());
+	//proj_mat[5] = 2.0 / ;
 /*
 	Transform cam2w = lookAt();
 	Transform ortho(setOrthographic(width(), height()));
@@ -63,19 +64,19 @@ void OGLViewer::initializeGL()
 	//////////////////////////////////////////////////////////////////////////
 	// Create shader files
 	points_shader = new GLSLProgram("points_vs.glsl", "points_fs.glsl", "points_gs.glsl");
-	curve_shader = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl");
-
+	
+	curve_shaders[0] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "lagrange_te.glsl");
+	curve_shaders[1] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "bezier_te.glsl");
+	curve_shaders[2] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "b-spline_te.glsl"); 
 
 	// Export vbo for shaders
 
 	// Get uniform variable location
-	//vertex_position = points_shader->getUniformLocation("vertex_position");
-	//vertex_colour = points_shader->getUniformLocation("vertex_colour");
 	point_proj_mat_loc = points_shader->getUniformLocation("proj_matrix"); // WorldToCamera matrix
-	curve_proj_mat_loc = curve_shader->getUniformLocation("proj_matrix"); // WorldToCamera matrix
+	curve_proj_mat_loc = curve_shaders[cv_type]->getUniformLocation("proj_matrix"); // WorldToCamera matrix
+	curve_degree_loc = curve_shaders[cv_type]->getUniformLocation("degree");
+	curve_seg_loc = curve_shaders[cv_type]->getUniformLocation("segments");
 
-	/*cout << "vertex_position location: " << vertex_position << endl;
-	cout << "vertex_colour location: " << vertex_colour << endl;*/
 	cout << "Point Projection matrix location: " << point_proj_mat_loc << endl;
 	cout << "Curve Projection matrix location: " << curve_proj_mat_loc << endl;
 }
@@ -108,7 +109,8 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	}
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == DRAWING_MODE)
 	{
-		Point3D *pt = new Point3D(e->x() - width() / 2, height() / 2 - e->y(), 0);
+		Point3D *pt = new Point3D((e->x() * 2 - width()) / static_cast<Float>(height()),
+			1.0 - 2.0 * e->y() / static_cast<Float>(height()), 0);
 			/*new Point3D(
 			(e->x() - width() / 2) * 2.0 / height(),
 			1.0 - e->y() * 2.0 / height(),
@@ -116,6 +118,7 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 		ctrl_points.push_back(pt);
 
 		this->exportPointVBO(points_verts);
+		//cout << *pt << endl;
 		cout << "Mouse position: " << e->x() << ", " << e->y() << endl;
 	}
 	update();
@@ -154,15 +157,17 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 
 void OGLViewer::exportPointVBO(GLfloat* &ptsVBO)
 {
-
-	delete[] ptsVBO;
-	ptsVBO = new GLfloat[ctrl_points.size() * 3];
-
-	for (int i = 0; i < ctrl_points.size(); i++)
+	if (ctrl_points.size())
 	{
-		ptsVBO[i * 3] = static_cast<GLfloat>(ctrl_points[i]->x);
-		ptsVBO[i * 3 + 1] = static_cast<GLfloat>(ctrl_points[i]->y);
-		ptsVBO[i * 3 + 2] = static_cast<GLfloat>(ctrl_points[i]->z);
+		delete[] ptsVBO;
+		ptsVBO = new GLfloat[ctrl_points.size() * 3];
+
+		for (int i = 0; i < ctrl_points.size(); i++)
+		{
+			ptsVBO[i * 3] = static_cast<GLfloat>(ctrl_points[i]->x);
+			ptsVBO[i * 3 + 1] = static_cast<GLfloat>(ctrl_points[i]->y);
+			ptsVBO[i * 3 + 2] = static_cast<GLfloat>(ctrl_points[i]->z);
+		}
 	}
 }
 
@@ -178,57 +183,71 @@ void OGLViewer::paintGL()
 	glCullFace(GL_FRONT); // cull back face
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	// Bind VBOs
-	//pts vbo
-	GLuint pts_vbo;
-	glGenBuffers(1, &pts_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
+	if (ctrl_points.size() && points_verts != nullptr)
+	{
+		// Bind VBOs
+		//pts vbo
+		GLuint pts_vbo;
+		glGenBuffers(1, &pts_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
 
-	// Bind normal value as color
-	/*GLuint box_color_vbo;
-	glGenBuffers(1, &box_color_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, box_color_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * box_vbo_size, box_norms, GL_STATIC_DRAW);*/
+		// Bind normal value as color
+		/*GLuint box_color_vbo;
+		glGenBuffers(1, &box_color_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, box_color_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * box_vbo_size, box_norms, GL_STATIC_DRAW);*/
 
-	// Bind VAO
-	GLuint pts_vao;
-	glGenVertexArrays(1, &pts_vao);
-	glBindVertexArray(pts_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(0);
+		// Bind VAO
+		GLuint pts_vao;
+		glGenVertexArrays(1, &pts_vao);
+		glBindVertexArray(pts_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+		glEnableVertexAttribArray(0);
 
-	// Use shader program
-	points_shader->use_program();
+		// Use shader program
+		points_shader->use_program();
+
+		// Apply uniform matrix
+		glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
+		glDrawArrays(GL_POINTS, 0, ctrl_points.size());
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// Draw straight lines
+		GLuint curve_vbo;
+		glGenBuffers(1, &curve_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
+
+		// Bind VAO
+		GLuint curve_vao;
+		glGenVertexArrays(1, &curve_vao);
+		glBindVertexArray(curve_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+		glEnableVertexAttribArray(0);
+
+
+		curve_shaders[cv_type]->use_program();
+
+		// Apply uniform matrix
+		glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
+		glUniform1i(curve_degree_loc, curve_degree);
+		glUniform1i(curve_seg_loc, curve_seg);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		//glDrawArrays(GL_LINE_STRIP, 0, ctrl_points.size());
+
+		glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
+		for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
+		{
+			glDrawArrays(GL_PATCHES, i * curve_degree, curve_degree + 1);
+		}
+		//glDrawArrays(GL_PATCHES, 0, 4);
+		//glDrawArrays(GL_PATCHES, 4, 4);
+	}
 	
-	// Apply uniform matrix
-	//glUniformMatrix4fv(vertex_position, 1, GL_FALSE, points_verts);
-	glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
-	glDrawArrays(GL_POINTS, 0, ctrl_points.size());
-
-
-	//////////////////////////////////////////////////////////////////////////
-	// Draw straight lines
-	GLuint curve_vbo;
-	glGenBuffers(1, &curve_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
-
-	// Bind VAO
-	GLuint curve_vao;
-	glGenVertexArrays(1, &curve_vao);
-	glBindVertexArray(curve_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(0);
-
-	curve_shader->use_program();
-
-	// Apply uniform matrix
-	glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArrays(GL_LINE_STRIP, 0, ctrl_points.size());
 }
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
@@ -243,16 +262,73 @@ void OGLViewer::resizeGL(int w, int h)
 	/*view_cam->resizeViewport(width() / static_cast<double>(height()));
 	view_cam->exportVBO(nullptr, proj_mat, nullptr);*/
 
-	proj_mat[0] = 2.0 / static_cast<GLfloat>(width());
-	proj_mat[5] = 2.0 / static_cast<GLfloat>(height());
-	/*glViewport(0, 0, width(), height());
+	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width());
+	//proj_mat[0] = 2.0 / static_cast<GLfloat>(width());
+	//proj_mat[5] = 2.0 / static_cast<GLfloat>(height());
+	glViewport(0, 0, width(), height());
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();*/
+	glLoadIdentity();/**/
 }
 
 void OGLViewer::initParas()
 {
 	update();
+}
+
+void OGLViewer::clearVertex()
+{
+	for (int i = 0; i < ctrl_points.size(); i++)
+	{
+		delete ctrl_points[i];
+	}
+	ctrl_points.clear();
+	delete[] points_verts;
+	points_verts = nullptr;
+	exportPointVBO(points_verts);
+	update();
+}
+
+void OGLViewer::changeCurveType(int new_cv_type)
+{
+	// Update curve type
+	cv_type = new_cv_type;
+
+	// Switch shader location
+	curve_proj_mat_loc = curve_shaders[cv_type]->getUniformLocation("proj_matrix"); // WorldToCamera matrix
+	curve_degree_loc = curve_shaders[cv_type]->getUniformLocation("degree");
+	curve_seg_loc = curve_shaders[cv_type]->getUniformLocation("segments");
+
+	cout << "Curve Projection matrix location: " << curve_proj_mat_loc << endl;
+	update();
+}
+
+void OGLViewer::setDegree(int val)
+{
+	curve_degree = val;
+	update();
+}
+
+void OGLViewer::setSegment(int val)
+{
+	curve_seg = val;
+	update();
+}
+
+void OGLViewer::writePoints(const char *filename)
+{
+	FILE *VEC_File;
+	errno_t err = fopen_s(&VEC_File, filename, "w");
+	if (err)
+	{
+		printf("Can't write to file %s!\n", filename);
+		return;
+	}
+	for (int i = 0; i < ctrl_points.size(); i++)
+	{
+		fprintf(VEC_File, "v %lf %lf %lf\n",
+			ctrl_points[i]->x, ctrl_points[i]->y, ctrl_points[i]->z);
+	}
+	fclose(VEC_File);
 }

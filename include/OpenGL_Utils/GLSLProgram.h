@@ -9,13 +9,14 @@
 #include <fstream>
 #include <string>
 
+/*
 const GLenum shader_type[5] = {
 	GL_VERTEX_SHADER,
 	GL_FRAGMENT_SHADER,
 	GL_GEOMETRY_SHADER,
 	GL_TESS_CONTROL_SHADER,
 	GL_TESS_EVALUATION_SHADER
-};
+};*/
 
 class GLSLProgram
 {

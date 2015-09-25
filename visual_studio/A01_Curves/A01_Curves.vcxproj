@@ -158,8 +158,12 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <None Include="b-spline_te.glsl" />
     <None Include="curve_fs.glsl" />
+    <None Include="curve_tc.glsl" />
+    <None Include="bezier_te.glsl" />
     <None Include="curve_vs.glsl" />
+    <None Include="lagrange_te.glsl" />
     <None Include="points_fs.glsl" />
     <None Include="points_gs.glsl" />
     <None Include="points_vs.glsl" />

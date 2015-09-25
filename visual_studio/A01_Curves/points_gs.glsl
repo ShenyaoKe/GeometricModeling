@@ -6,7 +6,7 @@
 layout (points) in;
 // convert to points, line_strip, or triangle_strip
 layout(line_strip, max_vertices = 5) out;
-uniform float pointsize = 5;
+uniform float pointsize = 0.04;
 uniform mat4 proj_matrix;
 
 // NB: in and out pass-through vertex->fragment variables must go here if used

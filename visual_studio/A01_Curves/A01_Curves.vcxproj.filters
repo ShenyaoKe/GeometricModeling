@@ -108,5 +108,17 @@
     <None Include="curve_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="curve_tc.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="lagrange_te.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="bezier_te.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="b-spline_te.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
