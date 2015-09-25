@@ -67,7 +67,9 @@ void OGLViewer::initializeGL()
 	
 	curve_shaders[0] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "lagrange_te.glsl");
 	curve_shaders[1] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "bezier_te.glsl");
-	curve_shaders[2] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "b-spline_te.glsl"); 
+	curve_shaders[2] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "bspline_te.glsl");
+	curve_shaders[3] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "catmull_rom_te.glsl");
+	curve_shaders[4] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl");
 
 	// Export vbo for shaders
 
@@ -229,21 +231,54 @@ void OGLViewer::paintGL()
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 		glEnableVertexAttribArray(0);
 
-
-		curve_shaders[cv_type]->use_program();
-
-		// Apply uniform matrix
-		glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
-		glUniform1i(curve_degree_loc, curve_degree);
-		glUniform1i(curve_seg_loc, curve_seg);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		//glDrawArrays(GL_LINE_STRIP, 0, ctrl_points.size());
-
-		glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
-		for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
+		if (ctrl_points.size() > curve_degree)
 		{
-			glDrawArrays(GL_PATCHES, i * curve_degree, curve_degree + 1);
+			curve_shaders[cv_type]->use_program();
+
+			// Apply uniform matrix
+			glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
+			glUniform1i(curve_degree_loc, curve_degree);
+			glUniform1i(curve_seg_loc, curve_seg);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			//glDrawArrays(GL_LINE_STRIP, 0, ctrl_points.size());
+
+			if (cv_type == 2)// B-Spline
+			{
+				glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
+				for (int i = 0; i < ctrl_points.size() - curve_degree; i++)
+				{
+					glDrawArrays(GL_PATCHES, i, curve_degree + 1);
+				}
+			}
+			else if (cv_type == 3)// Catmull-Rom Spline
+			{
+				if (ctrl_points.size() >= (curve_degree * 2))
+				{
+					glPatchParameteri(GL_PATCH_VERTICES, curve_degree * 2);
+					for (int i = 0; i <= ctrl_points.size() - curve_degree * 2; i++)
+					{
+						glDrawArrays(GL_PATCHES, i, 2 * curve_degree);
+					}
+				}
+				
+			}
+			else
+			{
+				glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
+				for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
+				{
+					glDrawArrays(GL_PATCHES, i * curve_degree, curve_degree + 1);
+				}
+			}
+		} 
+		else
+		{
+			curve_shaders[4]->use_program();
+			glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
+			glDrawArrays(GL_LINE_STRIP, 0, ctrl_points.size());
 		}
+		
+		
 		//glDrawArrays(GL_PATCHES, 0, 4);
 		//glDrawArrays(GL_PATCHES, 4, 4);
 	}

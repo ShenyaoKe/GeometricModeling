@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	ui.setupUi(this);
 	ui.ogl_layout->addWidget(m_oglviewer);
-	setWindowTitle(tr("OpenGL Qt Template"));
+	//setWindowTitle(tr("OpenGL Qt Template"));
 
 	m_oglviewer->setFocusPolicy(Qt::StrongFocus);
 	connect(ui.clear_button, SIGNAL(clicked()), m_oglviewer, SLOT(clearVertex()));

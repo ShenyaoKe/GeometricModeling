@@ -117,7 +117,10 @@
     <None Include="bezier_te.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="b-spline_te.glsl">
+    <None Include="bspline_te.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="catmull_rom_te.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

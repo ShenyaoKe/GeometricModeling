@@ -14,6 +14,18 @@ void main()
 	}
 	float t = gl_TessCoord.x * degree;
 
+	// Blossoming
+	for (int j = 0; j < degree; j++)
+	{
+		for (int i = 0; i < degree - j; i++)
+		{
+			p[i] = p[i] * (i + j + 1 - t) / (j + 1)
+				+ p[i + 1] * (t - i) / (j + 1);
+		}
+	}
+	gl_Position = vec4(p[0], 1.0);
+
+	/*
 	float v[9];
 	bool odd = (degree % 2 == 0);
 	for (int i = 0; i <= degree / 2; i++)
@@ -50,4 +62,5 @@ void main()
 		vp += Lag[i] * p[i];
 	}
 	gl_Position = vec4(vp, 1.0);
+	*/
 }

@@ -37,7 +37,7 @@ static GLfloat* points_colors;// Texture coordinates vbo
 static Matrix4D matrix;// Transform matrix
 
 static GLSLProgram* points_shader;// OpenGL shader program
-static GLSLProgram* curve_shaders[4];
+static GLSLProgram* curve_shaders[5];
 //static GLSLProgram* lagrange_shader;// OpenGL shader program
 static int vertex_position;// Uniform matrix location
 static int vertex_colour;// Uniform matrix location
