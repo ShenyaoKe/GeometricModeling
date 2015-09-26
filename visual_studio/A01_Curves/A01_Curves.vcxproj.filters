@@ -123,5 +123,8 @@
     <None Include="catmull_rom_te.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="catmull_rom_tc.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

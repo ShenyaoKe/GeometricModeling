@@ -1,4 +1,5 @@
-layout( isolines ) in;
+#version 430
+layout(isolines) in;
 uniform int degree;
 
 void main()

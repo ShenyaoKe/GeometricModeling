@@ -3,38 +3,25 @@
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent),
 	cv_op_mode(DRAWING_MODE), cv_type(0),
-	curve_degree(3), curve_seg(20)
+	curve_degree(3), curve_seg(20),
+	curPoint(nullptr), viewScale(1.0)
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
 	format.setDepthBufferSize(32);
 	format.setStencilBufferSize(8);
-	format.setVersion(4, 5);
+	format.setVersion(4, 4);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 
-	// Link timer trigger
-	/*QTimer *timer = new QTimer(this);
-	/ *timer->setSingleShot(false);* /
-	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-	timer->start(0);*/
-
-
-	// Read obj file
-	Point3D *p = new Point3D();// width() / 2, height() / 2, 0.0);
+	// Initialize points
+	Point3D *p = new Point3D();
 	ctrl_points.push_back(p);
-	//delete[] points_verts;
-	//points_verts = new GLfloat[ctrl_points.size() * 3];
 	exportPointVBO(points_verts);
 
-	// Init camera
-	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width());
-	//proj_mat[5] = 2.0 / ;
-/*
-	Transform cam2w = lookAt();
-	Transform ortho(setOrthographic(width(), height()));
-	view_cam = new orthoCamera(cam2w, ortho);
-	view_cam->exportVBO(nullptr, proj_mat, nullptr);*/
+	// Initialize camera
+	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width()) / viewScale;
+	proj_mat[5] /= viewScale;
 }
 
 OGLViewer::~OGLViewer()
@@ -68,13 +55,14 @@ void OGLViewer::initializeGL()
 	curve_shaders[0] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "lagrange_te.glsl");
 	curve_shaders[1] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "bezier_te.glsl");
 	curve_shaders[2] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "bspline_te.glsl");
-	curve_shaders[3] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "curve_tc.glsl", "catmull_rom_te.glsl");
+	curve_shaders[3] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl", nullptr, "catmull_rom_tc.glsl", "catmull_rom_te.glsl");
 	curve_shaders[4] = new GLSLProgram("curve_vs.glsl", "curve_fs.glsl");
 
 	// Export vbo for shaders
 
 	// Get uniform variable location
 	point_proj_mat_loc = points_shader->getUniformLocation("proj_matrix"); // WorldToCamera matrix
+	win_size_loc = points_shader->getUniformLocation("win_size");
 	curve_proj_mat_loc = curve_shaders[cv_type]->getUniformLocation("proj_matrix"); // WorldToCamera matrix
 	curve_degree_loc = curve_shaders[cv_type]->getUniformLocation("degree");
 	curve_seg_loc = curve_shaders[cv_type]->getUniformLocation("segments");
@@ -104,24 +92,39 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 {
 	m_lastMousePos[0] = e->x();
 	m_lastMousePos[1] = e->y();
-		
+	
 	if ((e->buttons() == Qt::LeftButton) && (e->modifiers() == Qt::AltModifier))
 	{
 		cout << "Mouse position: " << e->x() << ", " << e->y() << endl;
 	}
+	// Add points
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == DRAWING_MODE)
 	{
-		Point3D *pt = new Point3D((e->x() * 2 - width()) / static_cast<Float>(height()),
-			1.0 - 2.0 * e->y() / static_cast<Float>(height()), 0);
-			/*new Point3D(
-			(e->x() - width() / 2) * 2.0 / height(),
-			1.0 - e->y() * 2.0 / height(),
-			0.0);*/
+		Point3D *pt = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()),
+			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())), 0);
 		ctrl_points.push_back(pt);
 
 		this->exportPointVBO(points_verts);
 		//cout << *pt << endl;
 		cout << "Mouse position: " << e->x() << ", " << e->y() << endl;
+	}
+	// Select closes point
+	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
+	{
+		curPoint = nullptr;
+		Point3D *np = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()),
+			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())), 0);
+		Float mindist = std::numeric_limits<Float>::infinity();
+		for (int i = 0; i < ctrl_points.size(); i++)
+		{
+			Float curdist = (*np - *ctrl_points[i]).getLenSq();
+			if (curdist < mindist && curdist < 0.1)
+			{
+				curPoint = ctrl_points[i];
+				mindist = curdist;
+			}
+		}
+		//curPoint = ctrl_points[0];
 	}
 	update();
 };
@@ -137,22 +140,36 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 		view_cam->rotate(-dy / 4, dx / 4, 0);
 		view_cam->exportVBO(view_mat, nullptr, nullptr);
 	}
-	else if ((e->buttons() == Qt::RightButton) && (e->modifiers() == Qt::AltModifier))
+	else */if ((e->buttons() == Qt::RightButton) && (e->modifiers() == Qt::AltModifier))
 	{
-		if (dx != e->x() && dy != e->y())
+		/*if (dx != e->x() && dy != e->y())
 		{
 			view_cam->zoom(0.0, 0.0, dx * 0.10);
 			view_cam->exportVBO(view_mat, nullptr, nullptr);
+		}*/
+		viewScale += dx * 0.01;
+		viewScale = viewScale < 0.001 ? 0.001 : viewScale;
+		updateCamera();
+	}
+	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
+	{
+		//curPoint = ctrl_points[0];
+		if (curPoint != nullptr)
+		{
+			curPoint->x = viewScale * (e->x() * 2 - width()) / static_cast<Float>(height());
+			curPoint->y = viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height()));
+			exportPointVBO(points_verts);
 		}
-	}*/
+		
+	}
 	/*else
 	{
-	QOpenGLWidget::mouseMoveEvent(e);
+		QOpenGLWidget::mouseMoveEvent(e);
 	}*/
 
 	m_lastMousePos[0] = e->x();
 	m_lastMousePos[1] = e->y();
-	//update();
+	update();
 }
 
 
@@ -194,12 +211,6 @@ void OGLViewer::paintGL()
 		glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
 
-		// Bind normal value as color
-		/*GLuint box_color_vbo;
-		glGenBuffers(1, &box_color_vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, box_color_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * box_vbo_size, box_norms, GL_STATIC_DRAW);*/
-
 		// Bind VAO
 		GLuint pts_vao;
 		glGenVertexArrays(1, &pts_vao);
@@ -213,9 +224,8 @@ void OGLViewer::paintGL()
 
 		// Apply uniform matrix
 		glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
+		glUniform1f(points_shader->getUniformLocation("pointsize"), 10.0 * viewScale / height());
 		glDrawArrays(GL_POINTS, 0, ctrl_points.size());
-
-
 		//////////////////////////////////////////////////////////////////////////
 		// Draw straight lines
 		GLuint curve_vbo;
@@ -262,7 +272,7 @@ void OGLViewer::paintGL()
 				}
 				
 			}
-			else
+			else// Bezier and Lagrange
 			{
 				glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
 				for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
@@ -293,18 +303,19 @@ void OGLViewer::paintEvent(QPaintEvent *e)
 //Resize function
 void OGLViewer::resizeGL(int w, int h)
 {
-	// Widget resize operations
-	/*view_cam->resizeViewport(width() / static_cast<double>(height()));
-	view_cam->exportVBO(nullptr, proj_mat, nullptr);*/
+	updateCamera();
 
-	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width());
-	//proj_mat[0] = 2.0 / static_cast<GLfloat>(width());
-	//proj_mat[5] = 2.0 / static_cast<GLfloat>(height());
-	glViewport(0, 0, width(), height());
+	/*glViewport(0, 0, width(), height());
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();/**/
+	glLoadIdentity();*/
+}
+
+void OGLViewer::updateCamera()
+{
+	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width()) / viewScale;
+	proj_mat[5] = 1.0 / viewScale;
 }
 
 void OGLViewer::initParas()

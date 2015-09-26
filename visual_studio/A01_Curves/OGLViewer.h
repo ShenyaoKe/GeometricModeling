@@ -23,6 +23,7 @@
 
 static int point_proj_mat_loc;// Porjection matrix location
 static int curve_proj_mat_loc;// Porjection matrix location
+static GLint win_size_loc;
 static GLfloat proj_mat[16] = {
 	1,0,0,0,
 	0,1,0,0,
@@ -57,9 +58,8 @@ public:
 	OGLViewer(QWidget *parent = nullptr);
 	~OGLViewer();
 
-	//void update();
 public slots:
-	//void resetCamera();
+	void updateCamera();
 	void initParas();
 	void clearVertex();
 	void changeCurveType(int new_cv_type = 0);
@@ -80,16 +80,18 @@ private:
 public:
 	vector<Point3D*> ctrl_points;
 protected:
-	//orthoCamera *view_cam;
 private:
 	int m_lastMousePos[2];
+	GLfloat viewScale;
 private:
-	int cv_op_mode;
+	int cv_op_mode;// draw edit view
 	int cv_type;
 	GLint curve_degree;
 	GLint curve_degree_loc;
 	GLint curve_seg;
 	GLint curve_seg_loc;
+
+	Point3D* curPoint;
 	friend class MainWindow;
 };
 

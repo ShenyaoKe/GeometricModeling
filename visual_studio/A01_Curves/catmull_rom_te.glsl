@@ -1,20 +1,21 @@
-layout( isolines ) in;
+#version 440
+layout(isolines) in;
 //uniform mat4 proj_matrix;  // projection * view * model
 uniform int degree;
 
 void main()
 {
-	// B-Spline
+	// Catmull-Rom Spline
 	float t = gl_TessCoord.x + degree - 1;
-	vec3 p[9];
-	for (int i = 0; i <= degree; i++)
+	vec3 p[gl_MaxPatchVertices];
+	for (int i = 0; i < 2 * degree; i++)
 	{
 		p[i] = gl_in[i].gl_Position.xyz;
 	}
 	// Lagrange
 	for (int j = 0; j < degree; j++)
 	{
-		for (int i = 0; i < degree - j; i++)
+		for (int i = 0; i < 2 * degree - j - 1; i++)
 		{
 			p[i] = p[i] * (i + j + 1 - t) / (j + 1)
 				+ p[i + 1] * (t - i) / (j + 1);

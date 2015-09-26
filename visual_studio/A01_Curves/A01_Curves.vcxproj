@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="bspline_te.glsl" />
+    <None Include="catmull_rom_tc.glsl" />
     <None Include="catmull_rom_te.glsl" />
     <None Include="curve_fs.glsl" />
     <None Include="curve_tc.glsl" />

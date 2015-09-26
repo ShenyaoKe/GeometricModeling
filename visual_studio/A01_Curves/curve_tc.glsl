@@ -1,4 +1,6 @@
-layout(vertices = gl_MaxPatchVertices) out;
+#version 430
+//layout(vertices = gl_MaxPatchVertices) out;
+layout(vertices = 9) out;
 
 uniform int segments;
 uniform int NumStrips=1;

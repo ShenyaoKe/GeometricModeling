@@ -1,4 +1,4 @@
-#version 410
+#version 430
 // extension should be core -- commented out
 // replaced gl_VerticesIn with gl_in.length ()
 //#extension GL_EXT_geometry_shader4 : enable
@@ -6,8 +6,9 @@
 layout (points) in;
 // convert to points, line_strip, or triangle_strip
 layout(line_strip, max_vertices = 5) out;
-uniform float pointsize = 0.04;
 uniform mat4 proj_matrix;
+uniform vec2 win_size;
+uniform float pointsize;// 0.04;
 
 // NB: in and out pass-through vertex->fragment variables must go here if used
 //in vec3 colour[];
