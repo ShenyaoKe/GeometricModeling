@@ -78,12 +78,12 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ProjectIcon.rc">
+    <ResourceCompile Include="CurveEditor.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ProjectIcon.ico">
+    <Image Include="CurveEditor.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

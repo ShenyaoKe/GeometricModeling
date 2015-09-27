@@ -98,7 +98,8 @@ public:
 	friend Matrix4D setShear(const Vector3D& vec);
 	friend Matrix4D setReflection(const Vector3D& vec);
 	friend Matrix4D setPerspective(Float verticalAngle = 90, Float aspectRatio = 1.6, Float nearPlane = 0.001, Float farPlane = 100);
-	friend Matrix4D setOrthographic(Float width = 2, Float height = 2, Float nearPlane = -1, Float farPlane = 1);
+	friend Matrix4D setOrthographic(Float lf = -1, Float rt = 1,
+		Float bt = -1, Float tp = 1, Float nr = -1, Float fr = 1);
 
 	/*template <typename vbo_t>
 	friend void exportVBO(const Matrix4D &mat, vbo_t *vtx_array);*/
@@ -352,13 +353,13 @@ inline Matrix4D setPerspective(Float verticalAngle, Float aspectRatio, Float nea
 		);
 }
 
-inline Matrix4D setOrthographic(Float wd, Float ht, Float nr, Float fr)
+inline Matrix4D setOrthographic(Float lf, Float rt, Float bt, Float tp, Float nr, Float fr)
 {
 	return Matrix4D(
-		2.0 / wd, 0.0, 0.0, 0.0,
-		0.0, 2.0 / ht, 0.0, 0.0,
-		0.0, 0.0, 2.0 / (nr - fr), 0.0,
-		0.0, 0.0, (nr + fr) / (nr - fr), 1.0
+		2.0 / (lf - rt), 0.0, 0.0, 0.0,
+		0.0, 2.0 / (tp - bt), 0.0, 0.0,
+		0.0, 0.0, 2.0 / (fr - nr), 0.0,
+		(rt + lf) / (rt - lf), (tp + bt) / (tp - bt), (nr + fr) / (fr - nr), 1.0
 		);
 }
 

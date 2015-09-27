@@ -72,12 +72,12 @@ void OGLViewer::initializeGL()
 }
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
-	if (e->key() == Qt::Key_E)
+	/*if (e->key() == Qt::Key_E)
 	{
 		cv_op_mode++;
 		cv_op_mode %= 3;
 	}
-	else if (e->key() == Qt::Key_Home)
+	else*/ if (e->key() == Qt::Key_Home)
 	{
 		initParas();
 	}
@@ -134,26 +134,16 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	int dx = e->x() - m_lastMousePos[0];
 	int dy = e->y() - m_lastMousePos[1];
 
-	printf("dx: %d, dy: %d\n", dx, dy);
-	/*if ((e->buttons() == Qt::LeftButton) && (e->modifiers() == Qt::AltModifier))
+	// Zoom-In
+	if ((e->buttons() == Qt::RightButton) && (e->modifiers() == Qt::AltModifier))
 	{
-		view_cam->rotate(-dy / 4, dx / 4, 0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else */if ((e->buttons() == Qt::RightButton) && (e->modifiers() == Qt::AltModifier))
-	{
-		/*if (dx != e->x() && dy != e->y())
-		{
-			view_cam->zoom(0.0, 0.0, dx * 0.10);
-			view_cam->exportVBO(view_mat, nullptr, nullptr);
-		}*/
-		viewScale += dx * 0.01;
+		viewScale -= dx * 0.01;
 		viewScale = viewScale < 0.001 ? 0.001 : viewScale;
 		updateCamera();
 	}
+	// Drag Points
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
 	{
-		//curPoint = ctrl_points[0];
 		if (curPoint != nullptr)
 		{
 			curPoint->x = viewScale * (e->x() * 2 - width()) / static_cast<Float>(height());
@@ -162,10 +152,6 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 		}
 		
 	}
-	/*else
-	{
-		QOpenGLWidget::mouseMoveEvent(e);
-	}*/
 
 	m_lastMousePos[0] = e->x();
 	m_lastMousePos[1] = e->y();
@@ -195,7 +181,8 @@ void OGLViewer::paintGL()
 	// Make curent window
 	makeCurrent();
 	// Clear background and color buffer
-	glClearColor(0.26, 0.72, 0.94, 1.0);
+	//glClearColor(0.26, 0.72, 0.94, 1.0);
+	glClearColor(0.64, 0.64, 0.64, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_CULL_FACE);
@@ -334,6 +321,11 @@ void OGLViewer::clearVertex()
 	points_verts = nullptr;
 	exportPointVBO(points_verts);
 	update();
+}
+
+void OGLViewer::changeOperation(int val)
+{
+	cv_op_mode = val;
 }
 
 void OGLViewer::changeCurveType(int new_cv_type)

@@ -6,6 +6,8 @@
 #include "OGLViewer.h"
 //#include <QtGui/QWindow>
 #include <QtGui/QOpenGLFunctions>
+#include <QSignalMapper>
+
 #include "ui_MainWindow.h"
 
 class MainWindow : public QMainWindow, protected QOpenGLFunctions
@@ -37,6 +39,7 @@ private:
 	bool m_update_pending;
 	bool m_animating;
 
+	QSignalMapper *signalMapper;
 	OGLViewer *m_oglviewer;
 	Ui::MainWindowClass ui;
 };

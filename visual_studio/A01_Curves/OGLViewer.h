@@ -16,10 +16,10 @@
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
 #include "Math/CGVector.h"
-#include "Geometry/Mesh.h"
-//#include "Math/Matrix4D.h"
-#include "Camera/Camera.h"
-#include "Accel/KdTreeAccel.h"
+//#include "Geometry/Mesh.h"
+#include "Math/Matrix4D.h"
+//#include "Camera/Camera.h"
+//#include "Accel/KdTreeAccel.h"
 
 static int point_proj_mat_loc;// Porjection matrix location
 static int curve_proj_mat_loc;// Porjection matrix location
@@ -62,6 +62,7 @@ public slots:
 	void updateCamera();
 	void initParas();
 	void clearVertex();
+	void changeOperation(int val = EDIT_MODE);
 	void changeCurveType(int new_cv_type = 0);
 	void setDegree(int val = 1);
 	void setSegment(int val = 20);
