@@ -75,7 +75,7 @@
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\lib\$(PlatformTarget);$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -152,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h" />
+    <ClInclude Include="curveIntersection.h" />
     <CustomBuild Include="OGLViewer.h">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing OGLViewer.h...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing OGLViewer.h...</Message>
@@ -171,6 +172,9 @@
     <None Include="curve_tc.glsl" />
     <None Include="bezier_te.glsl" />
     <None Include="curve_vs.glsl" />
+    <None Include="intersection_fs.glsl" />
+    <None Include="intersection_gs.glsl" />
+    <None Include="intersection_vs.glsl" />
     <None Include="lagrange_te.glsl" />
     <None Include="points_fs.glsl" />
     <None Include="points_gs.glsl" />

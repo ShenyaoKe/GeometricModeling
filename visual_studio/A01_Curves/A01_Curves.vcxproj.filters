@@ -91,6 +91,9 @@
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="curveIntersection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="points_fs.glsl">
@@ -124,6 +127,15 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="catmull_rom_tc.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="intersection_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="intersection_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="intersection_gs.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

@@ -16,7 +16,7 @@ void main()
 		p[i] = gl_in[i].gl_Position.xyz;
 	}
 	// Blossoming
-	for (int j = degree; j >= 0; j--)
+	for (int j = degree; j > 0; j--)
 	{
 		for (int i = 0; i < j; i++)
 		{

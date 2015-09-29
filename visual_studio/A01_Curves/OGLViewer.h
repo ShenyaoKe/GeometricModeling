@@ -18,6 +18,8 @@
 #include "Math/CGVector.h"
 //#include "Geometry/Mesh.h"
 #include "Math/Matrix4D.h"
+#include "Accel/BBox.h"
+#include "curveIntersection.h"
 //#include "Camera/Camera.h"
 //#include "Accel/KdTreeAccel.h"
 
@@ -38,6 +40,7 @@ static GLfloat* points_colors;// Texture coordinates vbo
 static Matrix4D matrix;// Transform matrix
 
 static GLSLProgram* points_shader;// OpenGL shader program
+static GLSLProgram* intersection_shader;
 static GLSLProgram* curve_shaders[5];
 //static GLSLProgram* lagrange_shader;// OpenGL shader program
 static int vertex_position;// Uniform matrix location
@@ -48,6 +51,13 @@ enum OPERATION_MODE
 	DRAWING_MODE = 0,
 	EDIT_MODE = 1,
 	VIEW_MODE = 2
+};
+enum CURVE_TYPE
+{
+	LAGRANGE_CURVE = 0,
+	BEZIER_CURVE = 1,
+	B_SPLINE = 2,
+	CATMULL_ROM_CURVE = 3
 };
 // OpenGL Window in Qt
 class OGLViewer : public QOpenGLWidget
@@ -66,7 +76,11 @@ public slots:
 	void changeCurveType(int new_cv_type = 0);
 	void setDegree(int val = 1);
 	void setSegment(int val = 20);
+	void findIntersections();
 	void writePoints(const char *filename);
+	void setDispCtrlPts(bool mode);
+	void setDispCurves(bool mode);
+	void setDispIntersections(bool mode);
 protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;
@@ -78,12 +92,28 @@ protected:
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
 	void exportPointVBO(GLfloat* &ptsVBO);
+	// Intersection functions
+	// box-box
+	bool intersect(const vector<Point3D*> &cv0,
+		const vector<Point3D*> &cv1);
+	bool intersect(const vector<Point3D*> cv,
+		const Point3D* p0, const Point3D* p1);
+	bool intersect(const Point3D* p0, const Point3D* p1,
+		const Point3D* q0, const Point3D* q1);
+	bool internalIntersect(const vector<Point3D*> &cv);
+	void subdivBezier(const vector<Point3D*> &cvs,
+		vector<Point3D*> &lf_cvs, vector<Point3D*> &rt_cvs);
 public:
-	vector<Point3D*> ctrl_points;
+	vector<Point3D *> ctrl_points;
+	vector<Point3D *> intersections;
 protected:
 private:
 	int m_lastMousePos[2];
 	GLfloat viewScale;
+	// Display Options
+	bool drawCtrlPts;
+	bool drawCurves;
+	bool drawIntersection;
 private:
 	int cv_op_mode;// draw edit view
 	int cv_type;

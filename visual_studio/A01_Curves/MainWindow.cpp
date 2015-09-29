@@ -26,6 +26,12 @@ MainWindow::MainWindow(QWidget *parent)
 	signalMapper->setMapping(ui.actionMove, 1);
 	connect(ui.actionInsert, SIGNAL(triggered()), signalMapper, SLOT(map()));
 	connect(ui.actionMove, SIGNAL(triggered()), signalMapper, SLOT(map()));
+
+	connect(ui.intersection_button, SIGNAL(clicked()), m_oglviewer, SLOT(findIntersections()));
+
+	connect(ui.disp_ctrl_pts, SIGNAL(toggled(bool)), m_oglviewer, SLOT(setDispCtrlPts(bool)));
+	connect(ui.disp_curves, SIGNAL(toggled(bool)), m_oglviewer, SLOT(setDispCurves(bool)));
+	connect(ui.disp_intersections, SIGNAL(toggled(bool)), m_oglviewer, SLOT(setDispIntersections(bool)));
 }
 
 MainWindow::~MainWindow()
