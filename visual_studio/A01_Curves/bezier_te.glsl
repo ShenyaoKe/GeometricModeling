@@ -44,5 +44,7 @@ void main()
 	//vec3 vp = p[0] * b[0] + p[1] * b[1] + p[2] * b[2] + p[3] * b[3];
 
 	gl_Position = vec4(vp, 1.0);*/
+	
+	//gl_Position = vec4(p[0] + vec3(sin(u * 200) * 0.01, cos(u * 200) * 0.01, 0), 1.0);
 	gl_Position = vec4(p[0], 1.0);
 }

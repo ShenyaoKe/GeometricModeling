@@ -193,54 +193,143 @@ void OGLViewer::exportPointVBO(GLfloat* &ptsVBO)
 
 bool OGLViewer::intersect(const vector<Point3D*> &cv0, const vector<Point3D*> &cv1)
 {
-	bool res = false;
+	bool ret = false;
 	BBox bound0(cv0), bound1(cv1);
-	double threshold = 0.001;
 	
 	/*cout << "Size of cv0: " << cv0.size() << " cv1: " << cv1.size() << endl;*/
 	//cout << "Bound 0\n\tPmin: " << bound0.pMin << "\n\tPmax: " << bound0.pMax << endl;
 	//cout << "Bound 1\n\tPmin: " << bound1.pMin << "\n\tPmax: " << bound1.pMax << endl;
 	if (covered(bound0, bound1))
 	{
-		//return true;
-		if (bound0.getDiagnal().getLength() < threshold
-			&& bound1.getDiagnal().getLength() < threshold
-			&& (bound0.getMidPoint() - bound1.getMidPoint()).getLength() < threshold)
-		{
-			/*if (cv0.front() == cv1.front() || cv0.front() == cv1.back() ||
-				cv0.back() == cv1.front() || cv0.back() == cv1.back())
-			{
-				cout << "haha" << endl;
-				
-			}
-			else*/
-			Point3D *interPt = new Point3D((bound1.getMidPoint() + bound0.getMidPoint())*0.5);
-			intersections.push_back(interPt);
-			return true;
-		}
 		bool isLine0 = isLine(cv0);
 		bool isLine1 = isLine(cv1);
-		vector<Point3D*> cv0_0, cv0_1, cv1_0, cv1_1;
-		subdivBezier(cv0, cv0_0, cv0_1);
-		subdivBezier(cv1, cv1_0, cv1_1);
+		if (isLine0 && isLine1)// both curve can be lines
+		{
+			ret = intersect(cv0.front(), cv0.back(), cv1.front(), cv1.back());
+		}
+		else if (isLine0 && !isLine1)
+		{
+			ret |= intersect(cv1, cv0.front(), cv0.back());
+		}
+		else if (!isLine0 && isLine1)
+		{
+			ret |= intersect(cv0, cv1.front(), cv1.back());
+		}
+		else
+		{
+			vector<Point3D*> cv0_0, cv0_1, cv1_0, cv1_1;
+			subdivBezier(cv0, cv0_0, cv0_1);
+			subdivBezier(cv1, cv1_0, cv1_1);
 
-		res |= intersect(cv0_0, cv1_0);
-		res |= intersect(cv0_0, cv1_1);
-		res |= intersect(cv0_1, cv1_0);
-		res |= intersect(cv0_1, cv1_1);
-		//vector<Point3D>
+			ret |= intersect(cv0_0, cv1_0);
+			ret |= intersect(cv0_0, cv1_1);
+			ret |= intersect(cv0_1, cv1_0);
+			ret |= intersect(cv0_1, cv1_1);
+		}
 	}
-	return res;
+	return ret;
 }
-
+// Box-Line Intersection
 bool OGLViewer::intersect(const vector<Point3D*> cv, const Point3D* p0, const Point3D* p1)
 {
-	return false;
-}
+	bool isIntersect = false;
+	BBox bound(cv);
+	if (!covered(bound, p0, p1))// Line !cover bound
+	{
+		return false;
+	}
+	else
+	{
+		vector<Point3D*> cv0, cv1;
+		subdivBezier(cv, cv0, cv1);
 
+		bool isLine0 = isLine(cv0);
+		bool isLine1 = isLine(cv1);
+		if (isLine0)
+		{
+			isIntersect |= intersect(cv0.front(), cv0.back(), p0, p1);
+		}
+		else
+		{
+			isIntersect |= intersect(cv0, p0, p1);
+		}
+		if (isLine1)
+		{
+			isIntersect |= intersect(cv1.front(), cv1.back(), p0, p1);
+		}
+		else
+		{
+			isIntersect |= intersect(cv1, p0, p1);
+		}
+	}
+	return isIntersect;
+}
+// Line-Line Intersection
 bool OGLViewer::intersect(const Point3D* p0, const Point3D* p1, const Point3D* q0, const Point3D* q1)
 {
-	return false;
+	Vector2D dp(p1->x - p0->x, p1->y - p0->y), dq(q1->x - q0->x, q1->y - q0->y);
+	Vector2D pq0(q0->x - p0->x, q0->y - p0->y), pq1(q1->x - p0->x, q1->y - p0->y);
+
+	if (Cross(dp, dq) == 0.0)
+	{
+		// Parallel
+		if (Cross(pq0, pq1) != 0.0)
+		{
+			return false;
+		}
+
+		// Colinear
+		Vector2D unitDp = Normalize(dp);
+		double lenP = dp * unitDp;
+		double distPQ0 = pq0 * unitDp, distPQ1 = pq1 * unitDp;
+		
+		if (distPQ0 > distPQ1)
+		{
+			// make distPQ0 smaller value
+			swap(distPQ0, distPQ1);
+		}
+		if (distPQ0 > lenP || distPQ1 < lenP)
+		{
+			return false;
+		}
+		if (distPQ0 < 0)
+		{
+			distPQ0 = 0;
+		}
+		if (distPQ1 > lenP)
+		{
+			distPQ1 = lenP;
+		}
+		Point3D* iPt0 = new Point3D(p0->x + unitDp.x * distPQ0, p0->y + unitDp.y * distPQ0, 0);
+		Point3D* iPt1 = new Point3D(p0->x + unitDp.x * distPQ1, p0->y + unitDp.y * distPQ1, 0);
+		intersections.push_back(iPt0);
+		intersections.push_back(iPt1);
+		return true;
+	}
+
+	//
+	Vector2D np(dp.y, -dp.x), nq(dq.y, -dq.x);
+	//Vector2D pq0(q0->x - p0->x, q0->y - p0->y), pq1(q1->x - p0->x, q1->y - p0->y);
+
+	double sign0 = pq0 * np, sign1 = pq1 * np;
+	if ((sign0 <= 0 && sign1 <= 0) || (sign0 >= 0 && sign1 >= 0))
+	{
+		return false;
+	}
+
+	Vector2D qp0(p0->x - q0->x, p0->y - q0->y), qp1(p1->x - q0->x, p1->y - q0->y);
+
+	double sign2 = qp0 * nq, sign3 = qp1 * nq;
+	if ((sign2 <= 0 && sign3 <= 0) || (sign2 >= 0 && sign3 >= 0))
+	{
+		return false;
+	}
+
+	double t = (qp0.x * dq.y - qp0.y * dq.x) / (dp.y * dq.x - dp.x * dq.y);
+	Point3D* iPt = new Point3D(p0->x + dp.x * t, p0->y + dp.y * t, 0);
+	intersections.push_back(iPt);
+	
+	return true;
 }
 
 bool OGLViewer::internalIntersect(const vector<Point3D*> &cv)
