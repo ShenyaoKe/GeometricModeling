@@ -78,6 +78,8 @@ public slots:
 	void setSegment(int val = 20);
 	void findIntersections();
 	void writePoints(const char *filename);
+	void readPoints(const char *filename);
+	void exportSVG(const char *filename);
 	void setDispCtrlPts(bool mode);
 	void setDispCurves(bool mode);
 	void setDispIntersections(bool mode);

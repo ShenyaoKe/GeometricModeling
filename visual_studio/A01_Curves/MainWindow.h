@@ -28,9 +28,10 @@ public:
 public slots:
 	/*void renderLater();
 	void renderNow();*/
-private slots:
-	void exportToFile();
-
+private slots :
+	void readPoints();
+	void savePoints();
+	void exportSVG();
 protected:
 	//bool event(QEvent *event) Q_DECL_OVERRIDE;
 	//void exposeEvent(QExposeEvent *event) Q_DECL_OVERRIDE;

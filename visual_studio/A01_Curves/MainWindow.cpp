@@ -18,7 +18,9 @@ MainWindow::MainWindow(QWidget *parent)
 	connect(ui.degree_val, SIGNAL(valueChanged(int)), m_oglviewer, SLOT(setDegree(int)));
 	connect(ui.seg_val, SIGNAL(valueChanged(int)), m_oglviewer, SLOT(setSegment(int)));
 
-	connect(ui.actionSave, SIGNAL(triggered()), this, SLOT(exportToFile()));
+	connect(ui.actionOpen, SIGNAL(triggered()), this, SLOT(readPoints()));
+	connect(ui.actionSave, SIGNAL(triggered()), this, SLOT(savePoints()));
+	connect(ui.actionExport, SIGNAL(triggered()), this, SLOT(exportSVG()));
 
 	signalMapper = new QSignalMapper(this);
 	connect(signalMapper, SIGNAL(mapped(int)), m_oglviewer, SLOT(changeOperation(int)));
@@ -39,8 +41,29 @@ MainWindow::~MainWindow()
 
 }
 
-void MainWindow::exportToFile()
+void MainWindow::readPoints()
 {
-	QString filename = QFileDialog::getSaveFileName(this, "Save file to...");
+	QString filename = QFileDialog::getOpenFileName(
+		this, "Open control points file...", "",tr("CPS files(*.cps)"));
+	m_oglviewer->readPoints(filename.toUtf8().constData());
+
+	ui.curve_type->setCurrentIndex(m_oglviewer->cv_type);
+	ui.degree_val->setValue(m_oglviewer->curve_degree);
+	ui.seg_val->setValue(m_oglviewer->curve_seg);
+}
+
+void MainWindow::savePoints()
+{
+	QString filename = QFileDialog::getSaveFileName(
+		this, "Save control points to...", "untitled.cps", tr("Control Points Files(*.cps)"));
 	m_oglviewer->writePoints(filename.toUtf8().constData());
+}
+
+void MainWindow::exportSVG()
+{
+	QString filename = QFileDialog::getSaveFileName(
+		this, "Export Bezier Curve to...", "untitled.svg", tr("SVG files(*.svg)"));
+	m_oglviewer->exportSVG(filename.toUtf8().constData());
+
+	
 }

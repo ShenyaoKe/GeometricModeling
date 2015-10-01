@@ -2,15 +2,15 @@
 #define __CURVEINTERSECTION__
 
 #include "Accel/BBox.h"
-const double curveEps = 0.005;
+const double curveEps = 0.001;
 
 inline bool covered(const BBox &box0, const BBox& box1)
 {
-	if (box0.pMax.x <= box1.pMin.x || box0.pMin.x >= box1.pMax.x)
+	if (box0.pMax.x < box1.pMin.x || box0.pMin.x > box1.pMax.x)
 	{
 		return false;
 	}
-	if (box0.pMax.y <= box1.pMin.y || box0.pMin.y >= box1.pMax.y)
+	if (box0.pMax.y < box1.pMin.y || box0.pMin.y > box1.pMax.y)
 	{
 		return false;
 	}

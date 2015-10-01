@@ -394,6 +394,8 @@ void OGLViewer::paintGL()
 			// Apply uniform matrix
 			glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
 			glUniform1f(points_shader->getUniformLocation("pointsize"), 10.0 * viewScale / height());
+
+			glLineWidth(1.0);
 			glDrawArrays(GL_POINTS, 0, ctrl_points.size());
 		}
 		
@@ -402,6 +404,8 @@ void OGLViewer::paintGL()
 		// Draw straight lines
 		if (drawCurves)
 		{
+			glLineWidth(1.6);
+
 			glEnable(GL_MULTISAMPLE);
 			glEnable(GL_BLEND);
 			GLuint curve_vbo;
@@ -467,6 +471,8 @@ void OGLViewer::paintGL()
 		// Draw Intersections
 		if (drawIntersection && intersections.size() > 0)
 		{
+
+			glLineWidth(1.0);
 			GLfloat *intersection_verts = new GLfloat[intersections.size() * 3];
 			for (int i = 0; i < intersections.size(); i++)
 			{
@@ -633,12 +639,129 @@ void OGLViewer::writePoints(const char *filename)
 		printf("Can't write to file %s!\n", filename);
 		return;
 	}
+	// Write curve type
+	switch (cv_type)
+	{
+	case 0:
+		fprintf(VEC_File, "#Lagrange Curve\nc %d\n", cv_type);
+		break;
+	case 1:
+		fprintf(VEC_File, "#Bezier Curve\nc %d\n", cv_type);
+		break;
+	case 2:
+		fprintf(VEC_File, "#B-Spline\nc %d\n", cv_type);
+		break;
+	case 3:
+		fprintf(VEC_File, "#Catmull-Rom Curve\nc %d\n", cv_type);
+		break;
+	default:
+		break;
+	}
+	// Write curve degree
+	fprintf(VEC_File, "d %d\n", curve_degree);
+	// Write curve segments
+	fprintf(VEC_File, "s %d\n", curve_seg);
+
 	for (int i = 0; i < ctrl_points.size(); i++)
 	{
 		fprintf(VEC_File, "v %lf %lf %lf\n",
 			ctrl_points[i]->x, ctrl_points[i]->y, ctrl_points[i]->z);
 	}
 	fclose(VEC_File);
+}
+
+void OGLViewer::readPoints(const char *filename)
+{
+	FILE *VEC_File;
+	errno_t err = fopen_s(&VEC_File, filename, "r");
+	if (err)
+	{
+		printf("Can't read file %s!\n", filename);
+		return;
+	}
+	clearVertex();
+	while (true)
+	{
+		char lineHeader[128];
+		int res = fscanf_s(VEC_File, "%s", &lineHeader, _countof(lineHeader));
+		if (res == EOF)
+		{
+			break;
+		}
+
+		if (strcmp(lineHeader, "c") == 0)
+		{
+			fscanf_s(VEC_File, " %d", &cv_type);
+		}
+		else if (strcmp(lineHeader, "d") == 0)
+		{
+			fscanf_s(VEC_File, " %d", &curve_degree);
+		}
+		else if (strcmp(lineHeader, "s") == 0)
+		{
+			fscanf_s(VEC_File, " %d", &curve_seg);
+		}
+		else if (strcmp(lineHeader, "v") == 0)
+		{
+			Point3D* vtx = new Point3D;
+			fscanf_s(VEC_File, " %lf %lf %lf\n", &vtx->x, &vtx->y, &vtx->z);
+			ctrl_points.push_back(vtx);
+		}
+		else//if (strcmp(lineHeader, "#") == 0)
+		{
+			char stupidBuffer[1000];
+			fgets(stupidBuffer, 1000, VEC_File);
+		}
+	}
+	fclose(VEC_File);
+	exportPointVBO(points_verts);
+	update();
+}
+
+void OGLViewer::exportSVG(const char *filename)
+{
+	FILE *SVG_File;
+	errno_t err = fopen_s(&SVG_File, filename, "w");
+	if (err)
+	{
+		printf("Can't write to files!\n");
+		return;
+	}
+	//SVG file head
+	fprintf(SVG_File,
+		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" \
+		"<svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n" \
+		"<g opacity=\"0.8\">\n",
+		width(), height());// define the size of export graph
+	double coef = height() * 0.5 / viewScale;
+	double halfW = width() * 0.5, halfH = height() * 0.5;
+	for (int i = 0; i < (ctrl_points.size() - 1) / 3; i++)
+	{
+		int idx = i * 3;
+
+		fprintf(SVG_File,
+			"\t<path d=\"M%lf,%lf C%lf,%lf %lf,%lf %lf,%lf\" stroke=\"rgb(102,255,153)\" " \
+			"stroke-width=\"2\" fill=\"none\"/>\n",
+			ctrl_points[idx]->x * coef + halfW, halfH - ctrl_points[idx]->y * coef,
+			ctrl_points[idx + 1]->x * coef + halfW, halfH - ctrl_points[idx + 1]->y * coef,
+			ctrl_points[idx + 2]->x * coef + halfW, halfH - ctrl_points[idx + 2]->y * coef,
+			ctrl_points[idx + 3]->x * coef + halfW, halfH - ctrl_points[idx + 3]->y * coef
+			);
+	}
+	fprintf(SVG_File,
+		"</g>\n<g stroke=\"rgb(133,51,255)\" stroke-width=\"2\" fill=\"rgb(133,51,255)\">\n");
+  
+	for (int i = 0; i < ctrl_points.size(); i++)
+	{
+		fprintf(SVG_File,
+			"\t<circle cx=\"%lf\" cy=\"%lf\" r=\"3\" />\n",
+			ctrl_points[i]->x * coef + halfW, halfH - ctrl_points[i]->y * coef);
+	}
+	fprintf(SVG_File, "</g>\n");
+
+	fprintf(SVG_File, "</svg>");
+	fclose(SVG_File);
+	cout << "SVG file saved successfully!" << endl;
 }
 
 void OGLViewer::setDispCtrlPts(bool mode)
