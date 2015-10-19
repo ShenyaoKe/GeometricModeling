@@ -196,3 +196,7 @@ FakesAssemblies/
 *.opt
 /tmp
 */GeneratedFiles
+/lib
+/visual_studio/A01_Curves/GeneratedFiles
+/include/Kaguya
+/include/OpenGL_Utils

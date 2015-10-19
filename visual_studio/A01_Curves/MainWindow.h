@@ -7,6 +7,7 @@
 //#include <QtGui/QWindow>
 #include <QtGui/QOpenGLFunctions>
 #include <QSignalMapper>
+#include <QColor>
 
 #include "ui_MainWindow.h"
 
@@ -32,6 +33,7 @@ private slots :
 	void readPoints();
 	void savePoints();
 	void exportSVG();
+	void pickColor();
 protected:
 	//bool event(QEvent *event) Q_DECL_OVERRIDE;
 	//void exposeEvent(QExposeEvent *event) Q_DECL_OVERRIDE;
@@ -42,6 +44,7 @@ private:
 
 	QSignalMapper *signalMapper;
 	OGLViewer *m_oglviewer;
+	QColor m_fgColor, m_bgColor;
 	Ui::MainWindowClass ui;
 };
 
