@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B12702AD-ABFB-343A-A199-8E24837244A3}</ProjectGuid>
+    <ProjectGuid>{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}</ProjectGuid>
     <Keyword>Qt4VSv1.0</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -62,9 +62,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Kaguyad.lib;opengl32.lib;glew32.lib;glu32.lib;OpenGL_Utilsd.lib;qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5OpenGLd.lib;Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy /i /e /s /y /f "$(ProjectDir)\*.glsl" "$(OutputPath)\*.glsl"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -81,9 +78,6 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalDependencies>Kaguya.lib;opengl32.lib;glew32.lib;glu32.lib;OpenGL_Utils.lib;qtmain.lib;Qt5Core.lib;Qt5Gui.lib;Qt5OpenGL.lib;Qt5Widgets.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>xcopy /i /e /s /y /f "$(ProjectDir)\*.glsl" "$(OutputPath)\*.glsl"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GeneratedFiles\Debug\moc_MainWindow.cpp">
@@ -145,14 +139,14 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="CurveEditor.rc" />
+    <ResourceCompile Include="ProjectIcon.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="CurveEditor.ico" />
+    <Image Include="ProjectIcon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GeneratedFiles\ui_About.h" />
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h" />
-    <ClInclude Include="curveIntersection.h" />
     <CustomBuild Include="OGLViewer.h">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing OGLViewer.h...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing OGLViewer.h...</Message>
@@ -165,27 +159,27 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="bspline_te.glsl" />
-    <None Include="catmull_rom_tc.glsl" />
-    <None Include="catmull_rom_te.glsl" />
-    <None Include="curve_fs.glsl" />
-    <None Include="curve_tc.glsl" />
-    <None Include="bezier_te.glsl" />
-    <None Include="curve_vs.glsl" />
-    <None Include="intersection_fs.glsl" />
-    <None Include="intersection_gs.glsl" />
-    <None Include="intersection_vs.glsl" />
-    <None Include="lagrange_te.glsl" />
-    <None Include="points_fs.glsl" />
-    <None Include="points_gs.glsl" />
-    <None Include="points_vs.glsl" />
+    <CustomBuild Include="About.ui">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\uic.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Uic%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\GeneratedFiles\ui_%(Filename).h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\uic.exe" -o ".\GeneratedFiles\ui_%(Filename).h" "%(FullPath)"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR)\bin\uic.exe;%(AdditionalInputs)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Uic%27ing %(Identity)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles\ui_%(Filename).h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\uic.exe" -o ".\GeneratedFiles\ui_%(Filename).h" "%(FullPath)"</Command>
+    </CustomBuild>
+    <None Include="frag.glsl" />
+    <None Include="stylesheet.qss" />
+    <None Include="transparent_frag.glsl" />
+    <None Include="vert.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="msvc2013_64" MocOptions="" />
+      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="5.4.2_64" MocOptions="" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

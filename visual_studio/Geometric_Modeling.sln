@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kaguya", "..\..\Kaguya\visu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenGL_Utils", "..\..\OpenGL\visual_studio\OpenGL_Utils\OpenGL_Utils.vcxproj", "{95874169-3159-442D-BD3A-8D223BBEC7CE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Barber", "Barber\Barber.vcxproj", "{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -16,13 +18,16 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x64.ActiveCfg = Debug|x64
-		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x64.Build.0 = Debug|x64
 		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.ActiveCfg = Release|x64
 		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.Build.0 = Release|x64
 		{E26467AF-7A85-484E-A54D-0488CA2D9F07}.Debug|x64.ActiveCfg = Debug|x64
 		{E26467AF-7A85-484E-A54D-0488CA2D9F07}.Release|x64.ActiveCfg = Release|x64
 		{95874169-3159-442D-BD3A-8D223BBEC7CE}.Debug|x64.ActiveCfg = Debug|x64
 		{95874169-3159-442D-BD3A-8D223BBEC7CE}.Release|x64.ActiveCfg = Release|x64
+		{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}.Debug|x64.ActiveCfg = Debug|x64
+		{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}.Debug|x64.Build.0 = Debug|x64
+		{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}.Release|x64.ActiveCfg = Release|x64
+		{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,13 @@
+<RCC>
+  <qresource>
+    <file>../../icons/arrowDown.png</file>
+    <file>../../icons/arrowUp.png</file>
+    <file>../../icons/dropArrow.png</file>
+    <file>../../icons/curve.png</file>
+    <file>../../icons/move_M.png</file>
+    <file>../../icons/rotate_M.png</file>
+    <file>../../icons/scale_M.png</file>
+    <file>../../icons/aselect.png</file>
+    <file>../../icons/selectmodel.png</file>
+  </qresource>
+</RCC>
