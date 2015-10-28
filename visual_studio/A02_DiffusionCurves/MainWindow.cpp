@@ -6,7 +6,6 @@
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_update_pending(false), m_animating(false)
-	, m_fgColor(255, 255, 255), m_bgColor(0, 0, 0)
 {
 	m_oglviewer = new OGLViewer;
 
@@ -24,6 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
 	connect(ui.actionSave, SIGNAL(triggered()), this, SLOT(savePoints()));
 	connect(ui.actionExport, SIGNAL(triggered()), this, SLOT(exportSVG()));
 
+	//////////////////////////////////////////////////////////////////////////
+	// Point control actions
 	signalMapper = new QSignalMapper(this);
 	connect(signalMapper, SIGNAL(mapped(int)), m_oglviewer, SLOT(changeOperation(int)));
 	signalMapper->setMapping(ui.actionInsert, 0);
@@ -35,9 +36,26 @@ MainWindow::MainWindow(QWidget *parent)
 	connect(ui.disp_curves, SIGNAL(toggled(bool)), m_oglviewer, SLOT(setDispCurves(bool)));
 	
 
-	ui.foreground_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
-	ui.background_color->setStyleSheet("QPushButton { background-color : #000000;}");
-	connect(ui.foreground_color, SIGNAL(clicked()), this, SLOT(pickColor()));
+	//////////////////////////////////////////////////////////////////////////
+	// Color actions
+	m_colors[0] = QColor(255, 255, 255);
+	m_colors[1] = QColor(255, 255, 255);
+	m_colors[2] = QColor(255, 255, 255);
+	m_colors[3] = QColor(255, 255, 255);
+	colorPickingSignals = new QSignalMapper(this);
+	connect(colorPickingSignals, SIGNAL(mapped(int)), this, SLOT(pickColor(int)));
+	colorPickingSignals->setMapping(ui.fc_lf_color, 0);
+	colorPickingSignals->setMapping(ui.fc_rt_color, 1);
+	colorPickingSignals->setMapping(ui.ec_lf_color, 2);
+	colorPickingSignals->setMapping(ui.ec_rt_color, 3);
+	connect(ui.fc_lf_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
+	connect(ui.fc_rt_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
+	connect(ui.ec_lf_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
+	connect(ui.ec_rt_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
+	ui.fc_lf_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
+	ui.fc_rt_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
+	ui.ec_lf_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
+	ui.ec_rt_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
 	
 }
 
@@ -72,18 +90,20 @@ void MainWindow::exportSVG()
 	
 }
 
-void MainWindow::pickColor()
+void MainWindow::pickColor(int idx)
 {
-	QColor curColor = QColorDialog::getColor(m_fgColor);
+	QColor curColor = QColorDialog::getColor(m_colors[idx]);
 	if (!curColor.isValid())
 	{
 		return;
 	}
-	m_fgColor = curColor;
-	QPalette pal = ui.foreground_color->palette();
-	pal.setColor(QPalette::Background, m_fgColor);
+	QPushButton* curButton = dynamic_cast<QPushButton*>(colorPickingSignals->mapping(idx));
+
+	m_colors[idx] = curColor;
+	QPalette pal = curButton->palette();
+	pal.setColor(QPalette::Background, m_colors[idx]);
 
 	const QString COLOR_STYLE("QPushButton { background-color : %1;}");
-	ui.foreground_color->setStyleSheet(COLOR_STYLE.arg(m_fgColor.name()));
-	ui.foreground_color->setPalette(pal);
+	curButton->setStyleSheet(COLOR_STYLE.arg(m_colors[idx].name()));
+	curButton->setPalette(pal);
 }

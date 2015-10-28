@@ -24,7 +24,7 @@ private slots :
 	void readPoints();
 	void savePoints();
 	void exportSVG();
-	void pickColor();
+	void pickColor(int idx);
 protected:
 
 private:
@@ -33,7 +33,8 @@ private:
 
 	QSignalMapper *signalMapper;
 	OGLViewer *m_oglviewer;
-	QColor m_fgColor, m_bgColor;
+	QColor m_colors[4];
+	QSignalMapper *colorPickingSignals;
 	Ui::MainWindowClass ui;
 };
 

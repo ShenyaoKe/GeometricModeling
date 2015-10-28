@@ -34,9 +34,9 @@ void main()
 
 	// The patch vertices (control points)
 	vec3 curPos[3];
-	curPos[0] = BezierBlossom(u - 0.01);
+	curPos[0] = BezierBlossom(u - 0.001);
 	curPos[1] = BezierBlossom(u);
-	curPos[2] = BezierBlossom(u + 0.01);
+	curPos[2] = BezierBlossom(u + 0.001);
 	gl_Position = vec4(curPos[1], 1.0);// +vec4(0, v*0.1, 0, 0);
 	vec3 T_te = normalize(curPos[2] - curPos[0]);
 	B_te = vec4(cross(vec3(0, 0, 1), T_te), 0.0);

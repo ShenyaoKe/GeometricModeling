@@ -19,5 +19,4 @@ void main ()
 	{
 		frag_color = vec4(u * color2 + (1 - u) * color3, 1.0);
 	}
-	//frag_color = vec4(0.4,0.88,0.56,1.0);
 }

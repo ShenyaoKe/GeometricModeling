@@ -14,8 +14,10 @@ uniform float pointsize;// 0.04;
 //in vec3 colour[];
 //out vec3 f_colour;
 
-void main () {
-	for(int i = 0; i < gl_in.length (); i++) {
+void main ()
+{
+	for(int i = 0; i < gl_in.length (); i++)
+	{
 		// use original point as first point in triangle strip
 		vec4 cur_pos = gl_in[i].gl_Position;
 		cur_pos.x -= pointsize * 0.5;

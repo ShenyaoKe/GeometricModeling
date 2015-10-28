@@ -4,7 +4,8 @@ OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent)
 	, cv_op_mode(DRAWING_MODE)
 	, curve_degree(3), curve_seg(200)
-	, curPoint(nullptr), viewScale(1.0)
+	, curPoint(nullptr)
+	, viewScale(1.0), viewTx(0), viewTy(0)
 	, drawCtrlPts(true), drawCurves(true)
 {
 	// Set surface format for current widget
@@ -105,8 +106,8 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	// Add points
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == DRAWING_MODE)
 	{
-		Point3D *pt = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()),
-			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())), 0);
+		Point3D *pt = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()) - viewTx,
+			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())) - viewTy, 0);
 		ctrl_points.push_back(pt);
 
 		this->exportPointVBO(points_verts);
@@ -117,8 +118,8 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
 	{
 		curPoint = nullptr;
-		Point3D *np = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()),
-			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())), 0);
+		Point3D *np = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()) - viewTx,
+			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())) - viewTy, 0);
 		Float mindist = std::numeric_limits<Float>::infinity();
 		for (int i = 0; i < ctrl_points.size(); i++)
 		{
@@ -146,6 +147,12 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 		viewScale = viewScale < 0.001 ? 0.001 : viewScale;
 		updateCamera();
 	}
+	if (e->buttons() == Qt::MidButton && e->modifiers() == Qt::AltModifier)
+	{
+		viewTx += viewScale * dx / static_cast<GLfloat>(height());// *0.01;
+		viewTy -= viewScale * dy / static_cast<GLfloat>(height());//* 0.01;
+		updateCamera();
+	}
 	// Drag Points
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
 	{
@@ -157,7 +164,6 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 		}
 		
 	}
-
 	m_lastMousePos[0] = e->x();
 	m_lastMousePos[1] = e->y();
 	update();
@@ -187,7 +193,7 @@ void OGLViewer::paintGL()
 	makeCurrent();
 	// Clear background and color buffer
 	//glClearColor(0.26, 0.72, 0.94, 1.0);
-	glClearColor(0.64, 0.64, 0.64, 1.0);
+	//glClearColor(0.64, 0.64, 0.64, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	
@@ -198,7 +204,7 @@ void OGLViewer::paintGL()
 			// Bind VBOs
 			//pts vbo
 			glDisable(GL_MULTISAMPLE);
-			glDisable(GL_BLEND);
+			//glDisable(GL_BLEND);
 			GLuint pts_vbo;
 			glGenBuffers(1, &pts_vbo);
 			glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
@@ -231,7 +237,7 @@ void OGLViewer::paintGL()
 			glLineWidth(1.6);
 
 			//glEnable(GL_MULTISAMPLE);
-			//glEnable(GL_BLEND);
+			glEnable(GL_BLEND);
 			GLuint curve_vbo;
 			glGenBuffers(1, &curve_vbo);
 			glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
@@ -280,6 +286,7 @@ void OGLViewer::updateCamera()
 {
 	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width()) / viewScale;
 	proj_mat[5] = 1.0 / viewScale;
+	proj_mat[12] = viewTx;	proj_mat[13] = viewTy;
 }
 
 void OGLViewer::initParas()

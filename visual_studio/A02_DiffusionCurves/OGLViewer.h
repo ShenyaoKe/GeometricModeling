@@ -23,8 +23,10 @@
 //#include "Camera/Camera.h"
 //#include "Accel/KdTreeAccel.h"
 
+static int point_view_mat_loc;// Porjection matrix location
 static int point_proj_mat_loc;// Porjection matrix location
 static int curve_proj_mat_loc;// Porjection matrix location
+static int curve_view_mat_loc;// Porjection matrix location
 static GLint win_size_loc;
 static GLfloat proj_mat[16] = {
 	1,0,0,0,
@@ -92,13 +94,15 @@ protected:
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
 	void exportPointVBO(GLfloat* &ptsVBO);
-public:
+private:// Points
 	vector<Point3D *> ctrl_points;
+
 	vector<Point3D *> intersections;
 protected:
-private:
+private:// Viewport configurations
 	int m_lastMousePos[2];
 	GLfloat viewScale;
+	GLfloat viewTx, viewTy; // View translation
 	// Display Options
 	bool drawCtrlPts;
 	bool drawCurves;
