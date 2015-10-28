@@ -2,24 +2,26 @@
 
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent)
-	, cv_op_mode(DRAWING_MODE)
+	, cv_op_mode(DRAWING_MODE), cv_open(true)
 	, curve_degree(3), curve_seg(200)
 	, curPoint(nullptr)
 	, viewScale(1.0), viewTx(0), viewTy(0)
-	, drawCtrlPts(true), drawCurves(true)
+	, drawCtrlPts(true), drawCurves(true), drawImage(false)
 {
 	// Set surface format for current widget
-	QSurfaceFormat format;
+	/*QSurfaceFormat format;
 	format.setDepthBufferSize(32);
 	format.setStencilBufferSize(8);
-	format.setVersion(4, 4);
-	format.setProfile(QSurfaceFormat::CoreProfile);
-	this->setFormat(format);
+	//format.setVersion(4, 4);
+	//format.setProfile(QSurfaceFormat::CoreProfile);
+	this->setFormat(format);*/
 
 	// Initialize points
-	Point3D *p = new Point3D();
+	Bezier* initBezier = new Bezier;
+	curves.push_back(initBezier);
+	/*Point3D *p = new Point3D();
 	ctrl_points.push_back(p);
-	exportPointVBO(points_verts);
+	exportPointVBO(points_verts);*/
 
 	// Initialize camera
 	proj_mat[0] = static_cast<GLfloat>(height()) / static_cast<GLfloat>(width()) / viewScale;
@@ -53,10 +55,10 @@ void OGLViewer::initializeGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glFrontFace(GL_CCW); // set counter-clock-wise vertex order to mean the front
 	
-	GLint bufs, samples;
+	/*GLint bufs, samples;
 	glGetIntegerv(GL_SAMPLE_BUFFERS, &bufs);
 	glGetIntegerv(GL_SAMPLES, &samples);
-	printf("MSAA: buffers = %d samples = %d\n", bufs, samples);
+	printf("MSAA: buffers = %d samples = %d\n", bufs, samples);*/
 
 
 	//////////////////////////////////////////////////////////////////////////
@@ -78,14 +80,27 @@ void OGLViewer::initializeGL()
 }
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
-	/*if (e->key() == Qt::Key_E)
-	{
-		cv_op_mode++;
-		cv_op_mode %= 3;
-	}
-	else*/ if (e->key() == Qt::Key_Home)
+	if (e->key() == Qt::Key_Home)
 	{
 		initParas();
+	}
+	else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
+	{
+		bool old_draw = drawCtrlPts;
+		drawCtrlPts = false;
+		paintGL();
+		this->saveFrameBuffer();
+		drawCtrlPts = old_draw;
+		//paintGL();
+	}
+	else if (e->key() == Qt::Key_D)
+	{
+		drawImage = !drawImage;
+		//paintGL();
+	}
+	else if (e->key() == Qt::Key_Enter)
+	{
+		cv_open = false;
 	}
 	else
 	{
@@ -108,6 +123,16 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	{
 		Point3D *pt = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()) - viewTx,
 			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())) - viewTy, 0);
+		if (cv_open)
+		{
+			curves.back()->insertPoint(pt);
+		}
+		else
+		{
+			Bezier* newCurve = new Bezier;
+			newCurve->insertPoint(pt);
+			curves.push_back(newCurve);
+		}
 		ctrl_points.push_back(pt);
 
 		this->exportPointVBO(points_verts);
@@ -162,14 +187,58 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 			curPoint->y = viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height()));
 			exportPointVBO(points_verts);
 		}
-		
 	}
 	m_lastMousePos[0] = e->x();
 	m_lastMousePos[1] = e->y();
 	update();
 }
 
+void OGLViewer::clearImageBuffers()
+{
+	for (int i = 0; i < ds_imgs.size(); i++)
+	{
+		delete ds_imgs[i];
+		ds_imgs[i] = nullptr;
+	}
+	ds_imgs.clear();
+	for (int i = 1; i < us_imgs.size(); i++)
+	{
+		delete us_imgs[i];
+		us_imgs[i] = nullptr;
+	}
+	us_imgs.clear();
+}
 
+void OGLViewer::saveFrameBuffer()
+{
+	clearImageBuffers();
+	drawImage = true;
+	QString filepath = "../../scene/texture/";
+	QImage* originImg = new QImage(this->grab().toImage());
+	originImg->save(filepath + "origin.png");
+	
+	int len = min(originImg->width(), originImg->height()) + 1;
+	int count = 1;
+	// Down sample images
+	ds_imgs.push_back(originImg);
+	while (len >= 1)
+	{
+		QImage* newimg = downscale(ds_imgs.back());
+		newimg->save(filepath + "downsample_" + QString::number(count) + ".png");
+		ds_imgs.push_back(newimg);
+
+		len >>= 1;
+		count++;
+	}
+
+	us_imgs.push_back(ds_imgs.back());
+	for (int i = ds_imgs.size() - 2; i >= 0; i--)
+	{
+		QImage* newImg = upscale(ds_imgs[i], us_imgs.back());
+		newImg->save(filepath + "upsample_" + QString::number(i) + ".png");
+		us_imgs.push_back(newImg);
+	}
+}
 
 void OGLViewer::exportPointVBO(GLfloat* &ptsVBO)
 {
@@ -193,88 +262,117 @@ void OGLViewer::paintGL()
 	makeCurrent();
 	// Clear background and color buffer
 	//glClearColor(0.26, 0.72, 0.94, 1.0);
-	//glClearColor(0.64, 0.64, 0.64, 0);
+	//glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	
-	if (ctrl_points.size() && points_verts != nullptr)
+	//if (drawImage && us_imgs.size() > 0)
+	/*if (drawImage)
 	{
-		if (drawCtrlPts)
+		//painter.begin(this);
+		QPainter painter(this);
+		painter.beginNativePainting();
+		QImage paintImg = *us_imgs[us_imgs.size() - 1];
+		//QImage paintImg("D:/shenyao_ke/Courses/GeometricModeling/scene/texture/upsample_0.png");
+		painter.drawImage(rect(), paintImg, paintImg.rect());
+		painter.endNativePainting();
+		//painter.end();
+	/// *
+	}
+	else*/
+	{
+		if (ctrl_points.size() && points_verts != nullptr)
 		{
-			// Bind VBOs
-			//pts vbo
-			glDisable(GL_MULTISAMPLE);
-			//glDisable(GL_BLEND);
-			GLuint pts_vbo;
-			glGenBuffers(1, &pts_vbo);
-			glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
-
-			// Bind VAO
-			GLuint pts_vao;
-			glGenVertexArrays(1, &pts_vao);
-			glBindVertexArray(pts_vao);
-			glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-			glEnableVertexAttribArray(0);
-
-			// Use shader program
-			points_shader->use_program();
-
-			// Apply uniform matrix
-			glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
-			glUniform1f(points_shader->getUniformLocation("pointsize"), 10.0 * viewScale / height());
-
-			glLineWidth(1.0);
-			glDrawArrays(GL_POINTS, 0, ctrl_points.size());
-		}
-		
-		
-		//////////////////////////////////////////////////////////////////////////
-		// Draw straight lines
-		if (drawCurves)
-		{
-			glLineWidth(1.6);
-
-			//glEnable(GL_MULTISAMPLE);
-			glEnable(GL_BLEND);
-			GLuint curve_vbo;
-			glGenBuffers(1, &curve_vbo);
-			glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
-
-			// Bind VAO
-			GLuint curve_vao;
-			glGenVertexArrays(1, &curve_vao);
-			glBindVertexArray(curve_vao);
-			glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-			glEnableVertexAttribArray(0);
-
-			if (ctrl_points.size() > curve_degree)
+			if (drawCtrlPts)
 			{
-				curve_shaders->use_program();
+				// Bind VBOs
+				//pts vbo
+				glDisable(GL_MULTISAMPLE);
+				glDisable(GL_BLEND);
+				GLuint pts_vbo;
+				glGenBuffers(1, &pts_vbo);
+				glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
+
+				// Bind VAO
+				GLuint pts_vao;
+				glGenVertexArrays(1, &pts_vao);
+				glBindVertexArray(pts_vao);
+				glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+				glEnableVertexAttribArray(0);
+
+				// Use shader program
+				points_shader->use_program();
 
 				// Apply uniform matrix
-				glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
-				glUniform1i(curve_degree_loc, curve_degree);
-				glUniform1i(curve_seg_loc, curve_seg);
+				glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
+				glUniform1f(points_shader->getUniformLocation("pointsize"), 10.0 * viewScale / height());
 
-				glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
-				for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
+				glLineWidth(1.0);
+				glDrawArrays(GL_POINTS, 0, ctrl_points.size());
+			}
+
+
+			//////////////////////////////////////////////////////////////////////////
+			// Draw straight lines
+			if (drawCurves)
+			{
+				glLineWidth(1.6);
+
+				//glEnable(GL_MULTISAMPLE);
+				glEnable(GL_BLEND);
+				GLuint curve_vbo;
+				glGenBuffers(1, &curve_vbo);
+				glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
+
+				// Bind VAO
+				GLuint curve_vao;
+				glGenVertexArrays(1, &curve_vao);
+				glBindVertexArray(curve_vao);
+				glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+				glEnableVertexAttribArray(0);
+
+				if (ctrl_points.size() > curve_degree)
 				{
-					glDrawArrays(GL_PATCHES, i * curve_degree, curve_degree + 1);
+					curve_shaders->use_program();
+
+					// Apply uniform matrix
+					glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
+					glUniform1i(curve_degree_loc, curve_degree);
+					glUniform1i(curve_seg_loc, curve_seg);
+
+					glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
+					for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
+					{
+						glDrawArrays(GL_PATCHES, i * curve_degree, curve_degree + 1);
+					}
 				}
 			}
 		}
-	}
-	
+	}//*/
 }
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
 {
-	// Draw current frame
-	paintGL();
+	/*if (drawImage)
+	{
+		QPainter painter(this);
+		painter.begin(this);
+		painter.beginNativePainting();
+		//QImage paintImg = *us_imgs[us_imgs.size() - 1];
+		QImage paintImg("D:/shenyao_ke/Courses/GeometricModeling/scene/texture/upsample_0.png");
+		painter.drawImage(rect(), paintImg, paintImg.rect());
+		painter.endNativePainting();
+		painter.end();
+	} 
+	else
+	{*/
+		// Draw current frame
+		paintGL();
+	//}
+	
 }
 //Resize function
 void OGLViewer::resizeGL(int w, int h)
@@ -304,12 +402,7 @@ void OGLViewer::clearVertex()
 	delete[] points_verts;
 	points_verts = nullptr;
 	exportPointVBO(points_verts);
-	// Clear intersection information
-	for (int i = 0; i < intersections.size(); i++)
-	{
-		delete intersections[i];
-	}
-	intersections.clear();
+
 	update();
 }
 

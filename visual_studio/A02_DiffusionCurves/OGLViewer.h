@@ -8,6 +8,9 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QTime>
+#include <QPixmap>
+#include <QImage>
+#include <QPainter>
 //#include <QGLFunctions>
 #include <cstdio>
 #include <cstdlib>
@@ -19,6 +22,9 @@
 //#include "Geometry/Mesh.h"
 #include "Math/Matrix4D.h"
 #include "Accel/BBox.h"
+#include "Image/ImageData.h"
+#include "ImageScalor.h"
+#include "Bezier.h"
 //#include "curveIntersection.h"
 //#include "Camera/Camera.h"
 //#include "Accel/KdTreeAccel.h"
@@ -36,7 +42,7 @@ static GLfloat proj_mat[16] = {
 };
 
 static GLfloat* points_verts = nullptr;// vertices vbo
-static GLfloat* points_colors;// Texture coordinates vbo
+static GLfloat* points_colors = nullptr;// Texture coordinates vbo
 
 //static int box_vbo_size;// Triangle face numbers
 static Matrix4D matrix;// Transform matrix
@@ -93,11 +99,15 @@ protected:
 	void mousePressEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
+	void clearImageBuffers();
+	void saveFrameBuffer();
 	void exportPointVBO(GLfloat* &ptsVBO);
 private:// Points
-	vector<Point3D *> ctrl_points;
+	vector<Point3D*> ctrl_points;
+	vector<Bezier*> curves;
 
-	vector<Point3D *> intersections;
+	vector<QImage*> ds_imgs;
+	vector<QImage*> us_imgs;
 protected:
 private:// Viewport configurations
 	int m_lastMousePos[2];
@@ -106,7 +116,9 @@ private:// Viewport configurations
 	// Display Options
 	bool drawCtrlPts;
 	bool drawCurves;
+	bool drawImage;
 private:
+	bool cv_open;
 	int cv_op_mode;// draw edit view
 	GLint curve_degree;
 	GLint curve_degree_loc;

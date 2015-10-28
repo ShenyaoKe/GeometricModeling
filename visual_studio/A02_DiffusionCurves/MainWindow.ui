@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Curve Editor</string>
+   <string>Diffusion Curve</string>
   </property>
   <property name="styleSheet">
    <string notr="true"/>
@@ -361,14 +361,67 @@
        <item row="0" column="0">
         <widget class="QPushButton" name="clear_button">
          <property name="text">
-          <string>Clear</string>
+          <string>Clear Points</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QPushButton" name="saveImg_button">
+       <item row="3" column="0">
+        <widget class="QPushButton" name="save_final_img">
          <property name="text">
-          <string>Save Image</string>
+          <string>Save Final Image</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QPushButton" name="save_progress_img">
+         <property name="text">
+          <string>Save Progress Images</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QCheckBox" name="disp_img">
+           <property name="text">
+            <string>Show Image</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="disp_img_type">
+           <property name="minimumSize">
+            <size>
+             <width>80</width>
+             <height>0</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>Final Image</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Down-Sampling</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Up-sampling</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="disp_img_idx"/>
+         </item>
+        </layout>
+       </item>
+       <item row="5" column="0">
+        <widget class="QPushButton" name="save_all_img">
+         <property name="text">
+          <string>Save All Images</string>
          </property>
         </widget>
        </item>
