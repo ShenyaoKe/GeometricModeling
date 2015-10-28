@@ -8,11 +8,14 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QTime>
+#include <QString>
+#include <QFileDialog>
 #include <QOpenGLVertexArrayObject>
 //#include <QGLFunctions>
 
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
+#include "Image/ImageData.h"
 #include "Geometry/Mesh.h"
 //#include "Math/Matrix4D.h"
 #include "Camera/Camera.h"
@@ -22,7 +25,7 @@ static Mesh *model_mesh;
 static GLfloat* model_verts;// vertices vbo
 static GLfloat* model_uvs;// Texture coordinates vbo
 static GLfloat* model_norms;// Normal coordinates vbo
-static GLint* model_idxs;
+static GLint* model_uids;
 static int model_vbo_size;// Triangle face numbers
 
 static Mesh *box_mesh;// Display object
@@ -41,12 +44,13 @@ static int view_mat_loc;// Uniform matrix location
 static GLfloat view_mat[16];
 static int proj_mat_loc;// Porjection matrix location
 static GLfloat proj_mat[16];
+static int sel_id_loc;
 //////////////////////////////////////////////////////////////////////////
 // Acceleration
 //////////////////////////////////////////////////////////////////////////
 static vector<Shape*> triangleList;
 static KdTreeAccel *mytree;
-
+static ImageData* img;
 //////////////////////////////////////////////////////////////////////////
 // Sphere Attribute
 //////////////////////////////////////////////////////////////////////////
@@ -86,13 +90,14 @@ protected:
 private:
 	void bindBox();
 	void bindMesh();
+	void saveFrameBuffer();
 public:
 	double process_fps;
 protected:
 	perspCamera *view_cam;
 	vector<Shape*> triangleList;
 	KdTreeAccel *mytree;
-	int m_Select;
+	GLint m_Select;
 private:
 	int fps;
 	int tcount;

@@ -26,6 +26,11 @@ OGLViewer::OGLViewer(QWidget *parent)
 	model_mesh->refine(triangleList);
 	mytree = new KdTreeAccel(triangleList);
 
+	//////////////////////////////////////////////////////////////////////////
+
+	//ImageData* img = new ImageData("../../scene/texture/goldfish.png");
+	//img->writeFile("../../scene/texture/framebuffer.png");
+
 	resetCamera();
 
 	// Initialize transform matrix
@@ -41,7 +46,7 @@ OGLViewer::~OGLViewer()
 }
 void OGLViewer::resetCamera()
 {
-	Transform cam2w = lookAt(Point3D(3, 2, 3), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
+	Transform cam2w = lookAt(Point3D(10, 6, 10), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
 	Transform pers = Transform(setPerspective(67,
 		width() / static_cast<double>(height()), 0.1, 100));
 	view_cam = new perspCamera(cam2w, pers);
@@ -74,12 +79,11 @@ void OGLViewer::initializeGL()
 	// Create shader files
 	shader = new GLSLProgram("vert.glsl", "frag.glsl");
 	//shader_transparent = new GLSLProgram("vert.glsl", "transparent_frag.glsl");
-
-
+	
 	// Export vbo for shaders
-	box_mesh->exportVBO(box_vbo_size, box_verts, box_uvs, box_norms, box_idxs);
-	model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms, model_idxs);
-
+	//box_mesh->exportVBO(box_vbo_size, &box_verts, &box_uvs, &box_norms, &box_idxs);
+	model_mesh->exportVBO(model_vbo_size, &model_verts, &model_uvs, &model_norms, &model_uids);
+	
 	bindBox();
 	bindMesh();
 
@@ -87,9 +91,12 @@ void OGLViewer::initializeGL()
 	model_mat_loc = shader->getUniformLocation("model_matrix");
 	view_mat_loc = shader->getUniformLocation("view_matrix");
 	proj_mat_loc = shader->getUniformLocation("proj_matrix");; // WorldToCamera matrix
+	sel_id_loc = shader->getUniformLocation("sel_id");
 	cout << "Model matrix location: " << model_mat_loc << endl;
 	cout << "View matrix location: " << view_mat_loc << endl;
 	cout << "Projection matrix location: " << proj_mat_loc << endl;
+	cout << "Selection ID loc:" << sel_id_loc << endl;
+
 }
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
@@ -137,6 +144,12 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	{
 		m_selectMode = FACE_COMPONENT_SELECT;
 	}
+	// Save frame buffer
+	else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
+	{
+		this->saveFrameBuffer();
+	}
+	//////////////////////////////////////////////////////////////////////////
 	else
 	{
 		QOpenGLWidget::keyPressEvent(e);
@@ -213,8 +226,6 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	update();
 }
 
-
-
 void OGLViewer::bindBox()
 {
 	GLuint box_pts_vbo;
@@ -264,7 +275,7 @@ void OGLViewer::bindMesh()
 	GLuint model_idx_vbo;
 	glGenBuffers(1, &model_idx_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, model_idx_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * model_vbo_size, model_idxs, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * 3 * model_vbo_size, model_uids, GL_STATIC_DRAW);
 
 	// Bind VAO
 	GLuint model_vao;
@@ -277,7 +288,7 @@ void OGLViewer::bindMesh()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, model_uv_vbo);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, model_idx_vbo);
 	glVertexAttribPointer(3, 1, GL_INT, GL_FALSE, 0, nullptr);
@@ -286,12 +297,18 @@ void OGLViewer::bindMesh()
 	vao_handles.push_back(model_vao);
 }
 
+void OGLViewer::saveFrameBuffer()
+{
+	this->grab().save("../../scene/texture/framebuffer.png");
+	
+}
+
 void OGLViewer::paintGL()
 {
 	// Make curent window
 	makeCurrent();
 	// Clear background and color buffer
-	glClearColor(0.25, 0.4, 0.5, 0.5);
+	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	/*if (display_mode == 0)// Wireframe
@@ -324,14 +341,11 @@ void OGLViewer::paintGL()
 	glUniformMatrix4fv(proj_mat_loc, 1, GL_FALSE, proj_mat);
 	glDrawArrays(GL_TRIANGLES, 0, box_vbo_size * 3);*/
 	//////////////////////////////////////////////////////////////////////////
-	// Sphere
+	// Model
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); // cull back face
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//glEnable(GL_BLEND);
-	
-	//
-	
+		
 	glBindVertexArray(vao_handles[1]);
 	shader->use_program();
 
@@ -339,7 +353,7 @@ void OGLViewer::paintGL()
 	//glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, sphere_model_mat);
 	glUniformMatrix4fv(view_mat_loc, 1, GL_FALSE, view_mat);
 	glUniformMatrix4fv(proj_mat_loc, 1, GL_FALSE, proj_mat);
-	glUniform1i(shader->getUniformLocation("sel_id"), m_Select);
+	glUniform1i(sel_id_loc, m_Select);
 	glDrawArrays(GL_TRIANGLES, 0, model_vbo_size * 3);
 
 
@@ -354,7 +368,7 @@ void OGLViewer::paintEvent(QPaintEvent *e)
 
 	process_time.start();
 }
-//Resize function
+// Resize function
 void OGLViewer::resizeGL(int w, int h)
 {
 	// Widget resize operations
@@ -370,7 +384,5 @@ void OGLViewer::resizeGL(int w, int h)
 
 void OGLViewer::initParas()
 {
-	/*sphere_matrix = setTranslation(Vector3D());
-	sphere_matrix.exportVBO(sphere_model_mat);*/
 	update();
 }

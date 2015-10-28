@@ -195,8 +195,8 @@ FakesAssemblies/
 # Visual Studio 6 workspace options file
 *.opt
 /tmp
-*/GeneratedFiles
 /lib
-/visual_studio/A01_Curves/GeneratedFiles
 /include/Kaguya
 /include/OpenGL_Utils
+GeneratedFiles
+GeneratedFiles

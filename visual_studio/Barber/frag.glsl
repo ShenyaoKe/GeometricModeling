@@ -1,10 +1,11 @@
 #version 430
 //uniform sampler2D modelTex;
+uniform int sel_id;
 uniform mat4 view_matrix;
 in vec3 normal;
 in vec2 TexCoord;  // From the geometry shader
 in vec3 position_eye, normal_eye;
-//flat in int uid_fs;
+flat in int uid_fs;
 
 vec3 Kd = vec3(0.6, 0.8, 1);
 vec3 La = vec3(0, 0, 0); // grey ambient colour
@@ -16,13 +17,12 @@ out vec4 frag_color; // final colour of surface
 
 void main()
 {
-	//frag_color = vec4(uid_fs / 500.0, 1, 0, 1.0);
-	/*
-	if (uid_fs == 1)
+	//frag_color = vec4(uid_fs * 0.05, 0., 0, 1.0);
+	if (uid_fs == sel_id)
 	{
-		frag_color = vec4(1.0, 1.0, 1.0, 0.0);
+		frag_color = vec4(1.0, 0., 0, 1.0);
 	}
-	else*/
+	else
 	{
 		// ambient intensity
 		//vec3 Kd = texture(modelTex, TexCoord).xyz * 1.2;
@@ -40,7 +40,7 @@ void main()
 		// final colour
 		frag_color = vec4(Id, 1.0);
 		//frag_color = vec4(0, 1, 0, 1.0);
-	}
+	}//*/
 	
 }
 

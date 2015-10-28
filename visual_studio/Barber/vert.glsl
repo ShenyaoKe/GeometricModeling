@@ -9,11 +9,11 @@ uniform mat4 view_matrix; // WorldToCamera matrix
 uniform mat4 proj_matrix; // Projection matrix
 */
 
-uniform int sel_id;
+
 uniform mat4 view_matrix, proj_matrix;
 out vec3 normal;
 out vec2 TexCoord;
-//flat out int uid_fs;
+flat out int uid_fs;
 
 out vec3 position_eye, normal_eye;
 
@@ -21,6 +21,7 @@ void main()
 {
 	normal = vn;
 	TexCoord = uv;
+	uid_fs = uid;
 	/*if (sel_id == uid)
 	{
 		uid_fs = 1;
