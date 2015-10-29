@@ -33,7 +33,7 @@ private:
 
 	QSignalMapper *signalMapper;
 	OGLViewer *m_oglviewer;
-	QColor m_colors[4];
+	QColor m_colors[2];
 	QSignalMapper *colorPickingSignals;
 	Ui::MainWindowClass ui;
 };

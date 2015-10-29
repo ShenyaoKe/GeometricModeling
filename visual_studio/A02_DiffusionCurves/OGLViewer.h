@@ -12,23 +12,23 @@
 #include <QImage>
 #include <QPainter>
 //#include <QGLFunctions>
-#include <cstdio>
-#include <cstdlib>
-//#include <crtdefs>
-#include <vector>
+#include "common.h"
+
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
-#include "Math/CGVector.h"
+
+//#include "Math/CGVector.h"
 //#include "Geometry/Mesh.h"
-#include "Math/Matrix4D.h"
-#include "Accel/BBox.h"
-#include "Image/ImageData.h"
+//#include "Math/Matrix4D.h"
+//#include "Accel/BBox.h"
+//#include "Image/ImageData.h"
 #include "ImageScalor.h"
 #include "Bezier.h"
 //#include "curveIntersection.h"
 //#include "Camera/Camera.h"
 //#include "Accel/KdTreeAccel.h"
 
+static int point_size_loc;
 static int point_view_mat_loc;// Porjection matrix location
 static int point_proj_mat_loc;// Porjection matrix location
 static int curve_proj_mat_loc;// Porjection matrix location
@@ -41,11 +41,12 @@ static GLfloat proj_mat[16] = {
 	0,0,0,1
 };
 
+static GLint points_size;
 static GLfloat* points_verts = nullptr;// vertices vbo
 static GLfloat* points_colors = nullptr;// Texture coordinates vbo
 
 //static int box_vbo_size;// Triangle face numbers
-static Matrix4D matrix;// Transform matrix
+//static Matrix4D matrix;// Transform matrix
 
 static GLSLProgram* points_shader;// OpenGL shader program
 static GLSLProgram* curve_shaders;
@@ -103,7 +104,7 @@ private:
 	void saveFrameBuffer();
 	void exportPointVBO(GLfloat* &ptsVBO);
 private:// Points
-	vector<Point3D*> ctrl_points;
+	vector<QVector3D*> ctrl_points;
 	vector<Bezier*> curves;
 
 	vector<QImage*> ds_imgs;
@@ -125,7 +126,8 @@ private:
 	GLint curve_seg;
 	GLint curve_seg_loc;
 
-	Point3D* curPoint;
+	QVector3D* curPoint;
+	Bezier* curCurve;
 	friend class MainWindow;
 };
 

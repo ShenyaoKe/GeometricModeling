@@ -2,6 +2,7 @@
 
 
 Bezier::Bezier()
+	: degree(3)
 {
 }
 
@@ -20,36 +21,38 @@ Bezier::~Bezier()
 	colors.clear();
 }
 
-void Bezier::insertPoint(Point3D* pnt)
+void Bezier::insertPoint(QVector3D* pnt)
 {
+	//QVector3D* point = new QVector3D(*pnt);
 	ctrlPts.push_back(pnt);
 }
 
-void Bezier::insertColor(ColorRGBA* color)
+void Bezier::insertColor(QColor* color)
 {
 	colors.push_back(color);
 }
 
-void Bezier::exportVBO(int &dg, int &size, float* &ptsVBO, float* &colorVBO)
+void Bezier::exportVBO(int &dg, int &size, GLfloat* &ptsVBO, GLfloat* &colorVBO)
 {
 	dg = degree;
 	size = ctrlPts.size();
 	if (size > 0)
 	{
 		delete[] ptsVBO;
-		ptsVBO = new float[size * 3];
+		ptsVBO = new GLfloat[size * 3];
 		delete[] colorVBO;
-		colorVBO = new float[size * 3];
+		colorVBO = new GLfloat[size * 3];
 
 		for (int i = 0; i < size; i++)
 		{
-			ptsVBO[i * 3] = static_cast<float>(ctrlPts[i]->x);
-			ptsVBO[i * 3 + 1] = static_cast<float>(ctrlPts[i]->y);
-			ptsVBO[i * 3 + 2] = static_cast<float>(ctrlPts[i]->z);
+			//auto curPt = ctrlPts[i];
+			ptsVBO[i * 3] = ctrlPts[i]->x();
+			ptsVBO[i * 3 + 1] = ctrlPts[i]->y();
+			ptsVBO[i * 3 + 2] = ctrlPts[i]->z();
 
-			colorVBO[i * 3] = static_cast<float>(colors[i]->r);
+			/*colorVBO[i * 3] = static_cast<float>(colors[i]->r);
 			colorVBO[i * 3 + 1] = static_cast<float>(colors[i]->g);
-			colorVBO[i * 3 + 2] = static_cast<float>(colors[i]->b);
+			colorVBO[i * 3 + 2] = static_cast<float>(colors[i]->b);*/
 		}
 	}
 }

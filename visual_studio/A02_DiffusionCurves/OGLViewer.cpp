@@ -18,8 +18,11 @@ OGLViewer::OGLViewer(QWidget *parent)
 
 	// Initialize points
 	Bezier* initBezier = new Bezier;
+	QVector3D* pt = new QVector3D;
+	initBezier->insertPoint(pt);
+	curCurve = initBezier;
 	curves.push_back(initBezier);
-	/*Point3D *p = new Point3D();
+	/*QVector3D *p = new QVector3D();
 	ctrl_points.push_back(p);
 	exportPointVBO(points_verts);*/
 
@@ -69,14 +72,17 @@ void OGLViewer::initializeGL()
 	// Export vbo for shaders
 
 	// Get uniform variable location
+	point_size_loc = points_shader->getUniformLocation("pointsize");
 	point_proj_mat_loc = points_shader->getUniformLocation("proj_matrix"); // WorldToCamera matrix
 	win_size_loc = points_shader->getUniformLocation("win_size");
+
 	curve_proj_mat_loc = curve_shaders->getUniformLocation("proj_matrix"); // WorldToCamera matrix
 	curve_degree_loc = curve_shaders->getUniformLocation("degree");
 	curve_seg_loc = curve_shaders->getUniformLocation("segments");
 
+/*
 	cout << "Point Projection matrix location: " << point_proj_mat_loc << endl;
-	cout << "Curve Projection matrix location: " << curve_proj_mat_loc << endl;
+	cout << "Curve Projection matrix location: " << curve_proj_mat_loc << endl;*/
 }
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
@@ -98,9 +104,10 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		drawImage = !drawImage;
 		//paintGL();
 	}
-	else if (e->key() == Qt::Key_Enter)
+	else if (e->key() == Qt::Key_Return)
 	{
 		cv_open = false;
+		curCurve = curves.back();
 	}
 	else
 	{
@@ -121,21 +128,21 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	// Add points
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == DRAWING_MODE)
 	{
-		Point3D *pt = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()) - viewTx,
-			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())) - viewTy, 0);
-		if (cv_open)
-		{
-			curves.back()->insertPoint(pt);
-		}
-		else
+		if (!cv_open)
 		{
 			Bezier* newCurve = new Bezier;
-			newCurve->insertPoint(pt);
 			curves.push_back(newCurve);
+			curCurve = newCurve;
+			cv_open = true;
 		}
-		ctrl_points.push_back(pt);
+		QVector3D *pt = new QVector3D(viewScale * (e->x() * 2 - width()) / static_cast<double>(height()) - viewTx,
+			viewScale * (1.0 - 2.0 * e->y() / static_cast<double>(height())) - viewTy, 0);
+		curCurve->insertPoint(pt);
+		//pt->printInfo();
+		
+		//ctrl_points.push_back(pt);
 
-		this->exportPointVBO(points_verts);
+		//this->exportPointVBO(points_verts);
 		//cout << *pt << endl;
 		cout << "Mouse position: " << e->x() << ", " << e->y() << endl;
 	}
@@ -143,12 +150,12 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
 	{
 		curPoint = nullptr;
-		Point3D *np = new Point3D(viewScale * (e->x() * 2 - width()) / static_cast<Float>(height()) - viewTx,
-			viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height())) - viewTy, 0);
-		Float mindist = std::numeric_limits<Float>::infinity();
+		QVector3D *np = new QVector3D(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()) - viewTx,
+			viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())) - viewTy, 0);
+		float mindist = std::numeric_limits<float>::infinity();
 		for (int i = 0; i < ctrl_points.size(); i++)
 		{
-			Float curdist = (*np - *ctrl_points[i]).getLenSq();
+			float curdist = (*np - *ctrl_points[i]).lengthSquared();
 			if (curdist < mindist && curdist < 0.1)
 			{
 				curPoint = ctrl_points[i];
@@ -183,8 +190,8 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	{
 		if (curPoint != nullptr)
 		{
-			curPoint->x = viewScale * (e->x() * 2 - width()) / static_cast<Float>(height());
-			curPoint->y = viewScale * (1.0 - 2.0 * e->y() / static_cast<Float>(height()));
+			curPoint->setX(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()));
+			curPoint->setY(viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())));
 			exportPointVBO(points_verts);
 		}
 	}
@@ -249,9 +256,9 @@ void OGLViewer::exportPointVBO(GLfloat* &ptsVBO)
 
 		for (int i = 0; i < ctrl_points.size(); i++)
 		{
-			ptsVBO[i * 3] = static_cast<GLfloat>(ctrl_points[i]->x);
-			ptsVBO[i * 3 + 1] = static_cast<GLfloat>(ctrl_points[i]->y);
-			ptsVBO[i * 3 + 2] = static_cast<GLfloat>(ctrl_points[i]->z);
+			ptsVBO[i * 3] = static_cast<GLfloat>(ctrl_points[i]->x());
+			ptsVBO[i * 3 + 1] = static_cast<GLfloat>(ctrl_points[i]->y());
+			ptsVBO[i * 3 + 2] = static_cast<GLfloat>(ctrl_points[i]->z());
 		}
 	}
 }
@@ -280,8 +287,17 @@ void OGLViewer::paintGL()
 	}
 	else*/
 	{
-		if (ctrl_points.size() && points_verts != nullptr)
+		if (curves.size() == 0)
 		{
+			return;
+		}
+		for (auto curve : curves)
+		{
+			curve->exportVBO(curve_degree, points_size, points_verts, points_colors);
+			if (points_size == 0)
+			{
+				continue;
+			}
 			if (drawCtrlPts)
 			{
 				// Bind VBOs
@@ -291,7 +307,7 @@ void OGLViewer::paintGL()
 				GLuint pts_vbo;
 				glGenBuffers(1, &pts_vbo);
 				glBindBuffer(GL_ARRAY_BUFFER, pts_vbo);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * points_size, points_verts, GL_STATIC_DRAW);
 
 				// Bind VAO
 				GLuint pts_vao;
@@ -306,10 +322,10 @@ void OGLViewer::paintGL()
 
 				// Apply uniform matrix
 				glUniformMatrix4fv(point_proj_mat_loc, 1, GL_FALSE, proj_mat);
-				glUniform1f(points_shader->getUniformLocation("pointsize"), 10.0 * viewScale / height());
+				glUniform1f(point_size_loc, 10.0 * viewScale / height());
 
 				glLineWidth(1.0);
-				glDrawArrays(GL_POINTS, 0, ctrl_points.size());
+				glDrawArrays(GL_POINTS, 0, points_size);
 			}
 
 
@@ -324,7 +340,7 @@ void OGLViewer::paintGL()
 				GLuint curve_vbo;
 				glGenBuffers(1, &curve_vbo);
 				glBindBuffer(GL_ARRAY_BUFFER, curve_vbo);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * ctrl_points.size(), points_verts, GL_STATIC_DRAW);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * points_size, points_verts, GL_STATIC_DRAW);
 
 				// Bind VAO
 				GLuint curve_vao;
@@ -334,7 +350,7 @@ void OGLViewer::paintGL()
 				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 				glEnableVertexAttribArray(0);
 
-				if (ctrl_points.size() > curve_degree)
+				if (points_size > curve_degree)
 				{
 					curve_shaders->use_program();
 
@@ -344,14 +360,14 @@ void OGLViewer::paintGL()
 					glUniform1i(curve_seg_loc, curve_seg);
 
 					glPatchParameteri(GL_PATCH_VERTICES, curve_degree + 1);
-					for (int i = 0; i < (ctrl_points.size() - 1) / curve_degree; i++)
+					for (int i = 0; i < (points_size - 1) / curve_degree; i++)
 					{
 						glDrawArrays(GL_PATCHES, i * curve_degree, curve_degree + 1);
 					}
 				}
 			}
 		}
-	}//*/
+	}
 }
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
@@ -394,14 +410,12 @@ void OGLViewer::initParas()
 
 void OGLViewer::clearVertex()
 {
-	for (int i = 0; i < ctrl_points.size(); i++)
+	for (auto curve : curves)
 	{
-		delete ctrl_points[i];
+		delete curve;
 	}
-	ctrl_points.clear();
-	delete[] points_verts;
-	points_verts = nullptr;
-	exportPointVBO(points_verts);
+	curCurve = nullptr;
+	//curCurve->exportVBO(curve_degree, points_size, points_verts, points_colors);
 
 	update();
 }
@@ -443,7 +457,7 @@ void OGLViewer::writePoints(const char *filename)
 	for (int i = 0; i < ctrl_points.size(); i++)
 	{
 		fprintf(VEC_File, "v %lf %lf %lf\n",
-			ctrl_points[i]->x, ctrl_points[i]->y, ctrl_points[i]->z);
+			ctrl_points[i]->x(), ctrl_points[i]->y(), ctrl_points[i]->z());
 	}
 	fclose(VEC_File);
 }
@@ -481,8 +495,8 @@ void OGLViewer::readPoints(const char *filename)
 		}
 		else if (strcmp(lineHeader, "v") == 0)
 		{
-			Point3D* vtx = new Point3D;
-			fscanf_s(VEC_File, " %lf %lf %lf\n", &vtx->x, &vtx->y, &vtx->z);
+			QVector3D* vtx = new QVector3D;
+			fscanf_s(VEC_File, " %lf %lf %lf\n", vtx->x(), vtx->y(), vtx->z());
 			ctrl_points.push_back(vtx);
 		}
 		else//if (strcmp(lineHeader, "#") == 0)
@@ -520,10 +534,10 @@ void OGLViewer::exportSVG(const char *filename)
 		fprintf(SVG_File,
 			"\t<path d=\"M%lf,%lf C%lf,%lf %lf,%lf %lf,%lf\" stroke=\"rgb(102,255,153)\" " \
 			"stroke-width=\"2\" fill=\"none\"/>\n",
-			ctrl_points[idx]->x * coef + halfW, halfH - ctrl_points[idx]->y * coef,
-			ctrl_points[idx + 1]->x * coef + halfW, halfH - ctrl_points[idx + 1]->y * coef,
-			ctrl_points[idx + 2]->x * coef + halfW, halfH - ctrl_points[idx + 2]->y * coef,
-			ctrl_points[idx + 3]->x * coef + halfW, halfH - ctrl_points[idx + 3]->y * coef
+			ctrl_points[idx]->x()* coef + halfW, halfH - ctrl_points[idx]->y() * coef,
+			ctrl_points[idx + 1]->x()* coef + halfW, halfH - ctrl_points[idx + 1]->y() * coef,
+			ctrl_points[idx + 2]->x()* coef + halfW, halfH - ctrl_points[idx + 2]->y() * coef,
+			ctrl_points[idx + 3]->x()* coef + halfW, halfH - ctrl_points[idx + 3]->y() * coef
 			);
 	}
 	fprintf(SVG_File,
@@ -533,7 +547,7 @@ void OGLViewer::exportSVG(const char *filename)
 	{
 		fprintf(SVG_File,
 			"\t<circle cx=\"%lf\" cy=\"%lf\" r=\"3\" />\n",
-			ctrl_points[i]->x * coef + halfW, halfH - ctrl_points[i]->y * coef);
+			ctrl_points[i]->x() * coef + halfW, halfH - ctrl_points[i]->y() * coef);
 	}
 	fprintf(SVG_File, "</g>\n");
 

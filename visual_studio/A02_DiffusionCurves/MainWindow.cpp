@@ -44,18 +44,12 @@ MainWindow::MainWindow(QWidget *parent)
 	m_colors[3] = QColor(255, 255, 255);
 	colorPickingSignals = new QSignalMapper(this);
 	connect(colorPickingSignals, SIGNAL(mapped(int)), this, SLOT(pickColor(int)));
-	colorPickingSignals->setMapping(ui.fc_lf_color, 0);
-	colorPickingSignals->setMapping(ui.fc_rt_color, 1);
-	colorPickingSignals->setMapping(ui.ec_lf_color, 2);
-	colorPickingSignals->setMapping(ui.ec_rt_color, 3);
-	connect(ui.fc_lf_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
-	connect(ui.fc_rt_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
-	connect(ui.ec_lf_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
-	connect(ui.ec_rt_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
-	ui.fc_lf_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
-	ui.fc_rt_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
-	ui.ec_lf_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
-	ui.ec_rt_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
+	colorPickingSignals->setMapping(ui.lf_color, 0);
+	colorPickingSignals->setMapping(ui.rt_color, 1);
+	connect(ui.lf_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
+	connect(ui.rt_color, SIGNAL(clicked()), colorPickingSignals, SLOT(map()));
+	ui.lf_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
+	ui.rt_color->setStyleSheet("QPushButton { background-color : #FFFFFF;}");
 	
 }
 
@@ -102,7 +96,7 @@ void MainWindow::pickColor(int idx)
 	m_colors[idx] = curColor;
 	QPalette pal = curButton->palette();
 	pal.setColor(QPalette::Background, m_colors[idx]);
-
+	cout << "Current color red: " << curColor.redF() << endl;
 	const QString COLOR_STYLE("QPushButton { background-color : %1;}");
 	curButton->setStyleSheet(COLOR_STYLE.arg(m_colors[idx].name()));
 	curButton->setPalette(pal);

@@ -1,23 +1,30 @@
 #pragma once
 #ifndef __BEZIER__
 #define __BEZIER__
+
 #include <QColor>
-#include "Core/Kaguya.h"
-#include "Math/CGVector.h"
-#include "Image/ColorData.h"
+#include <QVector3D>
+
+//#include "Core/Kaguya.h"
+#include "common.h"
+#include "GL/glew.h"
+//#include "Math/CGVector.h"
+//#include "Image/ColorData.h"
+
+//typedef QVector3D Point3D;
 class Bezier
 {
 public:
 	Bezier();
 	~Bezier();
-	void insertPoint(Point3D* pnt);
-	void insertColor(ColorRGBA* color);
+	void insertPoint(QVector3D* pnt);
+	void insertColor(QColor* color);
 	void exportVBO(int &dg, int &size,
-		float* &ptsVBO, float* &colorVBO);
+		GLfloat* &ptsVBO, GLfloat* &colorVBO);
 public:
 	int degree;
-	vector<Point3D*> ctrlPts;// Control points
-	vector<ColorRGBA*> colors;
+	vector<QVector3D*> ctrlPts;// Control points
+	vector<QColor*> colors;
 };
 
 
