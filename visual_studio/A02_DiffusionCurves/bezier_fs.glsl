@@ -15,10 +15,10 @@ void main ()
 	float v = uv_gs.y;
 	if (v < 0.5)
 	{
-		frag_color = vec4(u * f_lf_color + (1 - u) * f_rt_color, 1.0);
+		frag_color = vec4(mix(f_lf_color, e_lf_color, u), 1.0);
 	}
 	else
 	{
-		frag_color = vec4(u * e_lf_color + (1 - u) * e_rt_color, 1.0);
+		frag_color = vec4(mix(f_rt_color, e_rt_color, u), 1.0);
 	}
 }

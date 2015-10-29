@@ -28,6 +28,7 @@
 //#include "Camera/Camera.h"
 //#include "Accel/KdTreeAccel.h"
 
+static int point_color_loc;
 static int point_size_loc;
 static int point_view_mat_loc;// Porjection matrix location
 static int point_proj_mat_loc;// Porjection matrix location
@@ -45,6 +46,9 @@ static GLfloat proj_mat[16] = {
 	0,0,1,0,
 	0,0,0,1
 };
+static GLfloat sel_pt_color[3] = { 1, 0, 0 };
+static GLfloat uns_pt_color[3] = { 0.6, 0.4, 0.88 };
+
 
 static GLint points_size;
 static GLfloat* points_verts = nullptr;// vertices vbo
@@ -95,6 +99,12 @@ public slots:
 	void exportSVG(const char *filename);
 	void setDispCtrlPts(bool mode);
 	void setDispCurves(bool mode);
+
+	//
+	void generateDiffusionCurve();
+	void saveFrameBuffer();
+signals:
+	void selectionChanged();
 protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;
@@ -106,7 +116,6 @@ protected:
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
 	void clearImageBuffers();
-	void saveFrameBuffer();
 	//void exportPointVBO(GLfloat* &ptsVBO);
 	void selectPoint(const QVector3D *cursor);
 private:// Points
@@ -125,7 +134,7 @@ private:// Viewport configurations
 	bool drawCurves;
 	bool drawImage;
 private:
-	bool cv_open;
+	bool cv_closed;
 	int cv_op_mode;// draw edit view
 	GLint curve_degree;
 	GLint curve_degree_loc;

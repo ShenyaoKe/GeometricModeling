@@ -21,6 +21,7 @@ public:
 
 public slots:
 private slots :
+	void updateCurveProp();
 	void readPoints();
 	void savePoints();
 	void exportSVG();
@@ -33,7 +34,7 @@ private:
 
 	QSignalMapper *signalMapper;
 	OGLViewer *m_oglviewer;
-	QColor m_colors[2];
+	QColor m_colors[4];
 	QSignalMapper *colorPickingSignals;
 	Ui::MainWindowClass ui;
 };

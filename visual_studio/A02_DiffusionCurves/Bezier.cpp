@@ -2,7 +2,7 @@
 
 
 Bezier::Bezier()
-	: degree(3)
+	: degree(3), segments(200)
 {
 	colors[0] = QColor(102, 224, 143);
 	colors[1] = QColor(204, 26, 61);
@@ -34,9 +34,11 @@ void Bezier::insertColor(const QColor* clrs)
 	}
 }
 
-void Bezier::exportVBO(int &dg, int &size, GLfloat* &ptsVBO, GLfloat* &colorVBO)
+void Bezier::exportVBO(int &dg, int &seg, int &size,
+	GLfloat* &ptsVBO, GLfloat* &colorVBO)
 {
-	dg = degree;
+	dg = this->degree;
+	seg = this->segments;
 	size = ctrlPts.size();
 	if (size > 0)
 	{
