@@ -31,6 +31,11 @@
 static int point_size_loc;
 static int point_view_mat_loc;// Porjection matrix location
 static int point_proj_mat_loc;// Porjection matrix location
+static int cv_flc_loc;
+static int cv_frc_loc;
+static int cv_elc_loc;
+static int cv_erc_loc;
+
 static int curve_proj_mat_loc;// Porjection matrix location
 static int curve_view_mat_loc;// Porjection matrix location
 static GLint win_size_loc;
@@ -102,7 +107,8 @@ protected:
 private:
 	void clearImageBuffers();
 	void saveFrameBuffer();
-	void exportPointVBO(GLfloat* &ptsVBO);
+	//void exportPointVBO(GLfloat* &ptsVBO);
+	void selectPoint(const QVector3D *cursor);
 private:// Points
 	vector<QVector3D*> ctrl_points;
 	vector<Bezier*> curves;
@@ -126,8 +132,8 @@ private:
 	GLint curve_seg;
 	GLint curve_seg_loc;
 
-	QVector3D* curPoint;
-	Bezier* curCurve;
+	QVector3D* current_point;
+	Bezier* current_curve;
 	friend class MainWindow;
 };
 

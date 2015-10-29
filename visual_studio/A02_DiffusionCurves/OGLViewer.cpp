@@ -4,7 +4,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent)
 	, cv_op_mode(DRAWING_MODE), cv_open(true)
 	, curve_degree(3), curve_seg(200)
-	, curPoint(nullptr)
+	, current_point(nullptr)
 	, viewScale(1.0), viewTx(0), viewTy(0)
 	, drawCtrlPts(true), drawCurves(true), drawImage(false)
 {
@@ -20,7 +20,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	Bezier* initBezier = new Bezier;
 	QVector3D* pt = new QVector3D;
 	initBezier->insertPoint(pt);
-	curCurve = initBezier;
+	current_curve = initBezier;
 	curves.push_back(initBezier);
 	/*QVector3D *p = new QVector3D();
 	ctrl_points.push_back(p);
@@ -79,7 +79,10 @@ void OGLViewer::initializeGL()
 	curve_proj_mat_loc = curve_shaders->getUniformLocation("proj_matrix"); // WorldToCamera matrix
 	curve_degree_loc = curve_shaders->getUniformLocation("degree");
 	curve_seg_loc = curve_shaders->getUniformLocation("segments");
-
+	cv_flc_loc = curve_shaders->getUniformLocation("f_lf_color");
+	cv_frc_loc = curve_shaders->getUniformLocation("f_rt_color");
+	cv_elc_loc = curve_shaders->getUniformLocation("e_lf_color");
+	cv_erc_loc = curve_shaders->getUniformLocation("e_rt_color");
 /*
 	cout << "Point Projection matrix location: " << point_proj_mat_loc << endl;
 	cout << "Curve Projection matrix location: " << curve_proj_mat_loc << endl;*/
@@ -107,7 +110,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	else if (e->key() == Qt::Key_Return)
 	{
 		cv_open = false;
-		curCurve = curves.back();
+		current_curve = curves.back();
 	}
 	else
 	{
@@ -132,12 +135,12 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 		{
 			Bezier* newCurve = new Bezier;
 			curves.push_back(newCurve);
-			curCurve = newCurve;
+			current_curve = newCurve;
 			cv_open = true;
 		}
 		QVector3D *pt = new QVector3D(viewScale * (e->x() * 2 - width()) / static_cast<double>(height()) - viewTx,
 			viewScale * (1.0 - 2.0 * e->y() / static_cast<double>(height())) - viewTy, 0);
-		curCurve->insertPoint(pt);
+		current_curve->insertPoint(pt);
 		//pt->printInfo();
 		
 		//ctrl_points.push_back(pt);
@@ -149,20 +152,11 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	// Select closes point
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
 	{
-		curPoint = nullptr;
+		//current_point = nullptr;
 		QVector3D *np = new QVector3D(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()) - viewTx,
 			viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())) - viewTy, 0);
-		float mindist = std::numeric_limits<float>::infinity();
-		for (int i = 0; i < ctrl_points.size(); i++)
-		{
-			float curdist = (*np - *ctrl_points[i]).lengthSquared();
-			if (curdist < mindist && curdist < 0.1)
-			{
-				curPoint = ctrl_points[i];
-				mindist = curdist;
-			}
-		}
-		//curPoint = ctrl_points[0];
+		selectPoint(np);
+		//current_point = ctrl_points[0];
 	}
 	update();
 };
@@ -188,11 +182,11 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	// Drag Points
 	if (e->buttons() == Qt::LeftButton && cv_op_mode == EDIT_MODE)
 	{
-		if (curPoint != nullptr)
+		if (current_point != nullptr)
 		{
-			curPoint->setX(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()));
-			curPoint->setY(viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())));
-			exportPointVBO(points_verts);
+			current_point->setX(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()));
+			current_point->setY(viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())));
+			//exportPointVBO(points_verts);
 		}
 	}
 	m_lastMousePos[0] = e->x();
@@ -247,18 +241,23 @@ void OGLViewer::saveFrameBuffer()
 	}
 }
 
-void OGLViewer::exportPointVBO(GLfloat* &ptsVBO)
+void OGLViewer::selectPoint(const QVector3D *cursor)
 {
-	if (ctrl_points.size())
+	current_point = nullptr;
+	/*QVector3D *np = new QVector3D(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()) - viewTx,
+		viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())) - viewTy, 0);*/
+	float mindist = std::numeric_limits<float>::infinity();
+	for (auto curve : curves)
 	{
-		delete[] ptsVBO;
-		ptsVBO = new GLfloat[ctrl_points.size() * 3];
-
-		for (int i = 0; i < ctrl_points.size(); i++)
+		for (auto pt : curve->ctrlPts)
 		{
-			ptsVBO[i * 3] = static_cast<GLfloat>(ctrl_points[i]->x());
-			ptsVBO[i * 3 + 1] = static_cast<GLfloat>(ctrl_points[i]->y());
-			ptsVBO[i * 3 + 2] = static_cast<GLfloat>(ctrl_points[i]->z());
+			float curdist = (*cursor - *pt).lengthSquared();
+			if (curdist < mindist && curdist < 0.1)
+			{
+				current_point = pt;
+				current_curve = curve;
+				mindist = curdist;
+			}
 		}
 	}
 }
@@ -355,6 +354,10 @@ void OGLViewer::paintGL()
 					curve_shaders->use_program();
 
 					// Apply uniform matrix
+					glUniform3fv(cv_flc_loc, 1, points_colors);
+					glUniform3fv(cv_frc_loc, 1, points_colors + 3);
+					glUniform3fv(cv_elc_loc, 1, points_colors + 6);
+					glUniform3fv(cv_erc_loc, 1, points_colors + 9);
 					glUniformMatrix4fv(curve_proj_mat_loc, 1, GL_FALSE, proj_mat);
 					glUniform1i(curve_degree_loc, curve_degree);
 					glUniform1i(curve_seg_loc, curve_seg);
@@ -414,8 +417,8 @@ void OGLViewer::clearVertex()
 	{
 		delete curve;
 	}
-	curCurve = nullptr;
-	//curCurve->exportVBO(curve_degree, points_size, points_verts, points_colors);
+	current_curve = nullptr;
+	//current_curve->exportVBO(curve_degree, points_size, points_verts, points_colors);
 
 	update();
 }
@@ -427,7 +430,10 @@ void OGLViewer::changeOperation(int val)
 
 void OGLViewer::setDegree(int val)
 {
-	curve_degree = val;
+	if (current_curve != nullptr)
+	{
+		current_curve->degree = val;
+	}
 	update();
 }
 
@@ -506,7 +512,7 @@ void OGLViewer::readPoints(const char *filename)
 		}
 	}
 	fclose(VEC_File);
-	exportPointVBO(points_verts);
+	//exportPointVBO(points_verts);
 	update();
 }
 
