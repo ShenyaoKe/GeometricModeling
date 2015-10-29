@@ -214,8 +214,7 @@ void OGLViewer::selectPoint(const QVector3D *cursor)
 {
 	current_point = nullptr;
 	current_curve = nullptr;
-	/*QVector3D *np = new QVector3D(viewScale * (e->x() * 2 - width()) / static_cast<float>(height()) - viewTx,
-		viewScale * (1.0 - 2.0 * e->y() / static_cast<float>(height())) - viewTy, 0);*/
+
 	float mindist = std::numeric_limits<float>::infinity();
 	for (auto curve : curves)
 	{

@@ -46,7 +46,7 @@ static GLfloat proj_mat[16] = {
 	0,0,1,0,
 	0,0,0,1
 };
-static GLfloat sel_pt_color[3] = { 1, 0, 0 };
+static GLfloat sel_pt_color[3] = { 1, 1, 1 };
 static GLfloat uns_pt_color[3] = { 0.6, 0.4, 0.88 };
 
 
