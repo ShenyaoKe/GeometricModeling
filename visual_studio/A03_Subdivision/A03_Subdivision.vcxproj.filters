@@ -159,5 +159,8 @@
     <None Include="indexed_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="indexed_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -46,11 +46,15 @@ void OGLViewer::initializeGL()
 	printf("OpenGL version supported %s\n", version);
 
 	// Enable OpenGL features
-	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_BLEND);
+	/*glEnable(GL_MULTISAMPLE);
+	glEnable(GL_POINT_SMOOTH);
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_POLYGON_SMOOTH);*/
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
-	glBlendEquation(GL_FUNC_ADD);
+	glEnable(GL_ALPHA_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glBlendEquation(GL_FUNC_ADD_EXT);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glFrontFace(GL_CCW); // set counter-clock-wise vertex order to mean the front
 
@@ -59,22 +63,12 @@ void OGLViewer::initializeGL()
 
 	// Create shader files
 	shader = new GLSLProgram("vert.glsl", "frag.glsl");
-	box_shader = new GLSLProgram("indexed_vs.glsl", "indexed_fs.glsl");
+	box_shader = new GLSLProgram("indexed_vs.glsl", "indexed_fs.glsl", "indexed_gs.glsl");
 	point_shader = new GLSLProgram("point_vs.glsl", "point_fs.glsl");
 
 	// Export vbo for shaders
 	//box_mesh->exportVBO(box_vbo_size, box_verts, box_uvs, box_norms);
 	box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	/*box_verts.reserve(9);
-	box_verts.push_back(0); box_verts.push_back(0); box_verts.push_back(0);
-	box_verts.push_back(0); box_verts.push_back(0.5); box_verts.push_back(0);
-	box_verts.push_back(0.5); box_verts.push_back(0); box_verts.push_back(0);
-	box_idxs.reserve(3);
-	box_idxs.push_back(0); box_idxs.push_back(1); box_idxs.push_back(2);*/
-	/*box_verts[0] = 0; box_verts[1] = 0; box_verts[2] = 0;
-	box_verts[3] = 0; box_verts[4] = 0.5; box_verts[5] = 0;
-	box_verts[6] = 0.5; box_verts[7] = 0; box_verts[8] = 0;
-	box_idxs[0] = 0; box_idxs[1] = 1; box_idxs[2] = 2;*/
 	model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
 
 	bindBox();
@@ -177,12 +171,11 @@ void OGLViewer::paintGL()
 	glDrawArrays(GL_POINTS, 0, box_vbo_size * 3);*/
 	//////////////////////////////////////////////////////////////////////////
 	// Model
-	//glEnable(GL_CULL_FACE);
-	//glCullFace(GL_BACK); // cull back face
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK); // cull back face
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBindVertexArray(vao_handles[0]);
-	//bindBox();
-
+	
 	// Use shader program
 	box_shader->use_program();
 

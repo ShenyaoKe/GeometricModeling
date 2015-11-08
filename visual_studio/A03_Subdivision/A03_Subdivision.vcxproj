@@ -182,6 +182,7 @@
     </CustomBuild>
     <None Include="frag.glsl" />
     <None Include="indexed_fs.glsl" />
+    <None Include="indexed_gs.glsl" />
     <None Include="indexed_vs.glsl" />
     <None Include="point_fs.glsl" />
     <None Include="point_vs.glsl" />
