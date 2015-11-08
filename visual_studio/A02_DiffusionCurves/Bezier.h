@@ -18,13 +18,14 @@ public:
 	Bezier();
 	~Bezier();
 	void insertPoint(QVector3D* pnt);
-	void insertColor(QColor* color);
-	void exportVBO(int &dg, int &size,
+	void insertColor(const QColor* clrs);
+	void exportVBO(int &dg, int &seg, int &size,
 		GLfloat* &ptsVBO, GLfloat* &colorVBO);
 public:
 	int degree;
+	int segments;
 	vector<QVector3D*> ctrlPts;// Control points
-	vector<QColor*> colors;
+	QColor colors[4];
 };
 
 

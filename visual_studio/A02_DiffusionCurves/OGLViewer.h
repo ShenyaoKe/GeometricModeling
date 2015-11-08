@@ -28,9 +28,15 @@
 //#include "Camera/Camera.h"
 //#include "Accel/KdTreeAccel.h"
 
+static int point_color_loc;
 static int point_size_loc;
 static int point_view_mat_loc;// Porjection matrix location
 static int point_proj_mat_loc;// Porjection matrix location
+static int cv_flc_loc;
+static int cv_frc_loc;
+static int cv_elc_loc;
+static int cv_erc_loc;
+
 static int curve_proj_mat_loc;// Porjection matrix location
 static int curve_view_mat_loc;// Porjection matrix location
 static GLint win_size_loc;
@@ -40,6 +46,9 @@ static GLfloat proj_mat[16] = {
 	0,0,1,0,
 	0,0,0,1
 };
+static GLfloat sel_pt_color[3] = { 1, 1, 1 };
+static GLfloat uns_pt_color[3] = { 0.6, 0.4, 0.88 };
+
 
 static GLint points_size;
 static GLfloat* points_verts = nullptr;// vertices vbo
@@ -90,6 +99,12 @@ public slots:
 	void exportSVG(const char *filename);
 	void setDispCtrlPts(bool mode);
 	void setDispCurves(bool mode);
+
+	//
+	void generateDiffusionCurve();
+	void saveFrameBuffer();
+signals:
+	void selectionChanged();
 protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;
@@ -101,8 +116,8 @@ protected:
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
 	void clearImageBuffers();
-	void saveFrameBuffer();
-	void exportPointVBO(GLfloat* &ptsVBO);
+	//void exportPointVBO(GLfloat* &ptsVBO);
+	void selectPoint(const QVector3D *cursor);
 private:// Points
 	vector<QVector3D*> ctrl_points;
 	vector<Bezier*> curves;
@@ -119,15 +134,15 @@ private:// Viewport configurations
 	bool drawCurves;
 	bool drawImage;
 private:
-	bool cv_open;
+	bool cv_closed;
 	int cv_op_mode;// draw edit view
 	GLint curve_degree;
 	GLint curve_degree_loc;
 	GLint curve_seg;
 	GLint curve_seg_loc;
 
-	QVector3D* curPoint;
-	Bezier* curCurve;
+	QVector3D* current_point;
+	Bezier* current_curve;
 	friend class MainWindow;
 };
 
