@@ -33,7 +33,7 @@ public:
 
 	HDS_Mesh operator=(const HDS_Mesh& rhs);
 
-	void validate();
+	void validate() const;
 	//void printInfo(const string &msg = "");
 	//void printMesh(const string &msg = "");
 	void releaseMesh();
@@ -46,9 +46,9 @@ public:
 		vector<uint>* idx_array = nullptr) const;
 
 private:
-	bool validateVertex(vert_t *v);
-	bool validateFace(face_t *f);
-	bool validateEdge(he_t *e);
+	bool validateVertex(vert_t *v) const;
+	bool validateFace(face_t *f) const;
+	bool validateEdge(he_t *e) const;
 private:
 	friend class Subdivision;
 private:

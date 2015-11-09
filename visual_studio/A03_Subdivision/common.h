@@ -5,7 +5,9 @@
 #define _USE_MATH_DEFINES
 
 #include <cstdlib>
+#include <cstdio>
 #include <cmath>
+#include <math.h>
 #include <assert.h>
 #include <string>
 #include <list>

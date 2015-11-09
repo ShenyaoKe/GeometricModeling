@@ -20,5 +20,5 @@ void main()
 {
 
 	// Mix the surface color with the line color
-	frag_color = vec4((normal + white) * 0.5, 1);
+	frag_color = vec4((normal + white) * 0.5, 1.0);
 }

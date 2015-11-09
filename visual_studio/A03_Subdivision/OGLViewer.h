@@ -89,8 +89,8 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
-	void bindBox();
-	void bindMesh();
+	GLuint bindBox();
+	GLuint bindMesh();
 	void saveFrameBuffer();
 public:
 	double process_fps;
@@ -105,6 +105,11 @@ private:
 	int m_selectMode;
 private: // OpenGL variables
 	int display_mode = 0;
+	int subd_lv;
+	int offset = 0;
+	bool showPiece = false;
+	bool drawPoint = false;
+	bool drawWireFrame = false;
 	vector<GLuint> vao_handles;
 
 	friend class MainWindow;

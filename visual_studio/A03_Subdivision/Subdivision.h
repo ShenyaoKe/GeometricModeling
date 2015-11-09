@@ -3,7 +3,6 @@
 #define __SUBDIVISION__
 
 #include "hds_mesh.h"
-
 typedef QVector3D point_t;
 typedef HDS_Face face_t;
 typedef HDS_Vertex vert_t;
@@ -22,6 +21,7 @@ public:
 	Subdivision(const Subdivision* subd_mesh);
 	~Subdivision();
 
+	uint getLevel() const;
 	void exportIndexedVBO(int lv = 0,
 		vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,

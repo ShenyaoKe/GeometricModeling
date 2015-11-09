@@ -31,7 +31,7 @@ public:
 	vector<HDS_Vertex*> corners() const;
 	QVector3D computeNormal();
 
-	QVector3D n, pre_n;		// Geometric face normal
+	QVector3D n;		// Geometric face normal
 	HDS_HalfEdge *he;
 
 	int vnum;				// Number of vertices

@@ -101,7 +101,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 			prevHE = prevHE->prev;
 		} while (prevHE != beginHE);
 		face->updateVerts();
-		face->pre_n = face->computeNormal();
+		//face->pre_n = face->computeNormal();
 	}
 	for (auto he : heUnassigned)
 	{
@@ -195,7 +195,7 @@ HDS_Mesh::~HDS_Mesh()
 	releaseMesh();
 }
 
-bool HDS_Mesh::validateEdge(he_t *e)
+bool HDS_Mesh::validateEdge(he_t *e) const
 {
 	if( heMap.find(e->index) == heMap.end() ) return false;
 	if( e->flip->flip != e ) return false;
@@ -208,7 +208,7 @@ bool HDS_Mesh::validateEdge(he_t *e)
 	return true;
 }
 
-bool HDS_Mesh::validateFace(face_t *f)
+bool HDS_Mesh::validateFace(face_t *f) const
 {
 	if( faceMap.find(f->index) == faceMap.end() ) return false;
 
@@ -224,7 +224,7 @@ bool HDS_Mesh::validateFace(face_t *f)
 	return true;
 }
 
-bool HDS_Mesh::validateVertex(vert_t *v)
+bool HDS_Mesh::validateVertex(vert_t *v) const
 {
 	if( vertMap.find(v->index) == vertMap.end() ) return false;
 
@@ -240,7 +240,7 @@ bool HDS_Mesh::validateVertex(vert_t *v)
 	return true;
 }
 
-void HDS_Mesh::validate()
+void HDS_Mesh::validate() const
 {
 	/// verify that the mesh has good topology, ie has loop
 	for (auto v : vertSet) {
@@ -405,9 +405,8 @@ void HDS_Mesh::exportIndexedVBO(
 		vtx_array->push_back(point->y());
 		vtx_array->push_back(point->z());
 	}
-	for (int i = 0; i < faceSet.size(); i++)
+	for (auto face : faceSet)
 	{
-		face_t* face = faceMap.at(i);
 		he_t* he = face->he;
 		he_t* curHE = he->next;
 		do 

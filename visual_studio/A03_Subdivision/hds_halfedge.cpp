@@ -14,8 +14,9 @@ HDS_HalfEdge::HDS_HalfEdge()
 
 
 HDS_HalfEdge::HDS_HalfEdge(const HDS_HalfEdge &other)
+	: index(other.index)
 {
-	index = other.index;
+	//index = other.index;
 	f = nullptr;
 	v = nullptr;
 	flip = nullptr;
