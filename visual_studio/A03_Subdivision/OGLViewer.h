@@ -20,7 +20,8 @@
 #include "Geometry/Mesh.h"
 //#include "Math/Matrix4D.h"
 #include "Camera/Camera.h"
-#include "Accel/KdTreeAccel.h"
+#include "hds_mesh.h"
+#include "Subdivision.h"
 
 static Mesh *model_mesh;
 static GLfloat* model_verts;// vertices vbo
@@ -29,17 +30,14 @@ static GLfloat* model_norms;// Normal coordinates vbo
 static GLint* model_uids;
 static int model_vbo_size;// Triangle face numbers
 
+static HDS_Mesh* hds_box;
 static Mesh *box_mesh;// Display object
-//static GLfloat* box_verts;// vertices vbo
-//static GLfloat* box_uvs;// Texture coordinates vbo
-//static GLfloat* box_norms;// Normal coordinates vbo
-//static GLint* box_idx
-/*
-static GLfloat box_verts[9];
-static GLuint box_idxs[3];*/
+static Subdivision* subd_mesh;
 static vector<GLfloat> box_verts;
 static vector<GLuint> box_idxs;
-static int box_vbo_size;// Triangle face numbers
+//static GLfloat* box_uvs;// Texture coordinates vbo
+//static GLfloat* box_norms;// Normal coordinates vbo
+
 static GLSLProgram* shader;// OpenGL shader program
 static GLSLProgram* box_shader;// OpenGL shader program
 static GLSLProgram* point_shader;// OpenGL shader program

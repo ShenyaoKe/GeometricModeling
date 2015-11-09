@@ -30,13 +30,11 @@ public:
 	qreal z() { return pos.z(); }
 
 public:
-	QVector3D pos, pre_pos;
+	QVector3D pos;
 	QVector3D normal;	// geometric normal
 	//QVector2D texcoord;
-	HDS_HalfEdge *he;
 
-	QVector3D vel, pre_vel;
-	QVector3D in_force;	// Internal force on vertex
+	HDS_HalfEdge *he;
 
 	int index;
 };

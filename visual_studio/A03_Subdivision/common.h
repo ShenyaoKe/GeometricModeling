@@ -27,4 +27,7 @@
 #include <limits>
 using namespace std;
 
+
+typedef unsigned int uint;
+
 #endif // COMMON_H

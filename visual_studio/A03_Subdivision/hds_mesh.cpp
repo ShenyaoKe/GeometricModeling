@@ -14,7 +14,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 	for (int i = 0; i < vertices.size(); i++)
 	{
 		vert_t* v = new vert_t(vertices[i]);
-		v->index = i;
+		v->index = vert_t::assignIndex();
 		vertSet.insert(v);
 		vertMap.insert(make_pair(i, v));
 	}
@@ -112,6 +112,82 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		heSet.insert(hef);
 		heMap.insert(make_pair(hef->index, hef));
 	}
+}
+
+HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
+{
+	// copy the vertices set
+	vertSet.clear();
+	vertMap.clear();
+	for (auto v : other.vertSet)
+	{
+		/// he is not set for this vertex
+		vert_t *nv = new vert_t(*v);
+		vertSet.insert(nv);
+		vertMap.insert(make_pair(v->index, nv));
+	}
+
+	faceSet.clear();
+	faceMap.clear();
+	for (auto f : other.faceSet)
+	{
+		/// he is not set for this vertex
+		face_t *nf = new face_t(*f);
+		faceSet.insert(nf);
+		faceMap.insert(make_pair(f->index, nf));
+	}
+
+	heSet.clear();
+	heMap.clear();
+	for (auto he : other.heSet)
+	{
+		/// face, vertex, prev, next, and flip are not set yet
+		he_t *nhe = new he_t(*he);
+		heSet.insert(nhe);
+		heMap.insert(make_pair(he->index, nhe));
+	}
+
+	/// fill in the pointers
+	for (auto &he : heSet)
+	{
+		auto he_ref = other.heMap.at(he->index);
+		//cout << he_ref->index << endl;
+		he->flip = heMap.at(he_ref->flip->index);
+		he->prev = heMap.at(he_ref->prev->index);
+		he->next = heMap.at(he_ref->next->index);
+
+		he->f = faceMap.at(he_ref->f->index);
+		he->v = vertMap.at(he_ref->v->index);
+	}
+
+	/// set the half edges for faces
+	for (auto &f : faceSet)
+	{
+		auto f_ref = other.faceMap.at(f->index);
+		f->he = heMap.at(f_ref->he->index);
+	}
+
+	/// set the half edges for vertices
+	for (auto &v : vertSet)
+	{
+		auto v_ref = other.vertMap.at(v->index);
+		v->he = heMap.at(v_ref->he->index);
+	}
+
+	/// create the sorted face set
+	/*sortedFaces.assign(faceSet.begin(), faceSet.end());
+	std::sort(sortedFaces.begin(), sortedFaces.end(), [](const face_t *fa, const face_t *fb) {
+		auto ca = fa->corners();
+		auto cb = fb->corners();
+		float minZa = 1e9, minZb = 1e9;
+		for (auto va : ca) {
+			minZa = std::min(va->pos.z(), minZa);
+		}
+		for (auto vb : cb) {
+			minZb = std::min(vb->pos.z(), minZb);
+		}
+		return minZa < minZb;
+	});*/
 }
 
 HDS_Mesh::~HDS_Mesh()
@@ -287,5 +363,59 @@ void HDS_Mesh::exportVBO(int &size,
 			*uids++ = this->index + i;
 			*uids++ = this->index + i;
 		}*/
+	}
+}
+
+void HDS_Mesh::exportIndexedVBO(
+	vector<float>* vtx_array, vector<float>* uv_array,
+	vector<float>* norm_array, vector<uint>* idx_array) const
+{
+	bool has_vert(false), has_texcoord(false), has_normal(false), has_uid(false);
+
+	if (vtx_array != nullptr)
+	{
+		vtx_array->clear();
+		vtx_array->reserve(vertSet.size() * 3);
+		has_vert = true;
+	}
+	/*if (this->fids[0]->uv >= 0 && uv_array != nullptr)
+	{
+	*uv_array = new vbo_t[size * 6];
+	texcoord = *uv_array;
+	has_texcoord = true;
+	}
+	if (this->fids[0]->n >= 0 && norm_array != nullptr)
+	{
+	*norm_array = new vbo_t[size * 9];
+	nms = *norm_array;
+	has_normal = true;
+	}*/
+	if (idx_array != nullptr)
+	{
+		idx_array->clear();
+		idx_array->reserve(faceSet.size() * 3);
+		has_uid = true;
+	}
+
+	for (int i = 0; i < vertSet.size(); i++)
+	{
+		auto point = vertMap.at(i);
+
+		vtx_array->push_back(point->x());
+		vtx_array->push_back(point->y());
+		vtx_array->push_back(point->z());
+	}
+	for (int i = 0; i < faceSet.size(); i++)
+	{
+		face_t* face = faceMap.at(i);
+		he_t* he = face->he;
+		he_t* curHE = he->next;
+		do 
+		{
+			idx_array->push_back(static_cast<uint>(curHE->v->index));
+			idx_array->push_back(static_cast<uint>(curHE->next->v->index));
+			idx_array->push_back(static_cast<uint>(he->v->index));
+			curHE = curHE->next;
+		} while (curHE->next != he);
 	}
 }

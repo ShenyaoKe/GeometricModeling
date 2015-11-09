@@ -19,11 +19,11 @@ OGLViewer::OGLViewer(QWidget *parent)
 	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
 	timer->start(0);
 
-
 	// Read obj file
 	box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	model_mesh = new Mesh("../../scene/obj/monkey.obj");
-
+	hds_box = new HDS_Mesh("../../scene/obj/tooth.obj");
+	subd_mesh = new Subdivision(1, hds_box);
 
 	resetCamera();
 }
@@ -68,7 +68,9 @@ void OGLViewer::initializeGL()
 
 	// Export vbo for shaders
 	//box_mesh->exportVBO(box_vbo_size, box_verts, box_uvs, box_norms);
-	box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
+	//box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
+	//hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
+	subd_mesh->exportIndexedVBO(1, &box_verts, nullptr, nullptr, &box_idxs);
 	model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
 
 	bindBox();

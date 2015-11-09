@@ -106,6 +106,7 @@
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="MeshLoader.cpp" />
     <ClCompile Include="OGLViewer.cpp" />
+    <ClCompile Include="Subdivision.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.h">
@@ -158,6 +159,7 @@
     <ClInclude Include="hds_mesh.h" />
     <ClInclude Include="hds_vertex.h" />
     <ClInclude Include="MeshLoader.h" />
+    <ClInclude Include="Subdivision.h" />
     <CustomBuild Include="OGLViewer.h">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing OGLViewer.h...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing OGLViewer.h...</Message>

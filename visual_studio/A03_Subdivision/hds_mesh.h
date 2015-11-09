@@ -27,8 +27,8 @@ public:
 	};
 
 	//HDS_Mesh();
-	//HDS_Mesh(const HDS_Mesh& other);
 	HDS_Mesh(const string &filename);
+	HDS_Mesh(const HDS_Mesh &mesh);
 	~HDS_Mesh();
 
 	HDS_Mesh operator=(const HDS_Mesh& rhs);
@@ -40,16 +40,17 @@ public:
 	void exportVBO(int &size,
 		vbo_t** vtx_array = nullptr, vbo_t** uv_array = nullptr,
 		vbo_t** norm_array = nullptr, int** idx_array = nullptr) const;
-	/*void exportVBO(int &size,
-		vbo_t** vtx_array = nullptr, vbo_t** uv_array = nullptr,
-		vbo_t** norm_array = nullptr, vector<int> *idx_array = nullptr) const;*/
+	void exportIndexedVBO(vector<float>* vtx_array = nullptr,
+		vector<float>* uv_array = nullptr,
+		vector<float>* norm_array = nullptr,
+		vector<uint>* idx_array = nullptr) const;
 
 private:
 	bool validateVertex(vert_t *v);
 	bool validateFace(face_t *f);
 	bool validateEdge(he_t *e);
 private:
-	friend class SpringMesh;
+	friend class Subdivision;
 private:
 	unordered_set<he_t*> heSet;
 	unordered_set<face_t*> faceSet;

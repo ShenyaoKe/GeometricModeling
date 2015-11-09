@@ -9,21 +9,19 @@ float HDS_Face::faceAngle(const HDS_Face* f0, const HDS_Face* f1)
 }
 
 HDS_Face::HDS_Face()
+	: index(-1)
+	, n(0, 1, 0)
+	, he(nullptr)
 {
-	//isFlap = false;
-	index = -1;
-	he = nullptr;
 }
 
 HDS_Face::~HDS_Face(){}
 
 HDS_Face::HDS_Face(const HDS_Face &other)
+	: index(other.index)
+	, n(other.n)
+	, he(nullptr)
 {
-	//isFlap = other.isFlap;
-	index = other.index;
-	n = other.n;
-	he = nullptr;
-
 }
 
 HDS_Face HDS_Face::operator=(const HDS_Face &other)
@@ -68,7 +66,8 @@ QVector3D HDS_Face::center() const
 {
 	auto cs = corners();
 	QVector3D c;
-	for(auto p : cs) {
+	for(auto p : cs)
+	{
 		c += p->pos;
 	}
 	c /= (qreal) cs.size();
