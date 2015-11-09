@@ -17,16 +17,8 @@
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
 
-//#include "Math/CGVector.h"
-//#include "Geometry/Mesh.h"
-//#include "Math/Matrix4D.h"
-//#include "Accel/BBox.h"
-//#include "Image/ImageData.h"
 #include "ImageScalor.h"
 #include "Bezier.h"
-//#include "curveIntersection.h"
-//#include "Camera/Camera.h"
-//#include "Accel/KdTreeAccel.h"
 
 static int point_color_loc;
 static int point_size_loc;
