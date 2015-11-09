@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Barber", "Barber\Barber.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A02_DiffusionCurves", "A02_DiffusionCurves\A02_DiffusionCurves.vcxproj", "{BDC7C0CD-B3C9-4112-B9FF-ABF29F1A8722}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A03_Subdivision", "A03_Subdivision\A03_Subdivision.vcxproj", "{EF44B977-1CD7-4ED7-9B76-9352CF696995}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -30,9 +32,12 @@ Global
 		{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}.Release|x64.ActiveCfg = Release|x64
 		{EDD3F1B4-C063-4A6B-9892-6FD4AAE688A1}.Release|x64.Build.0 = Release|x64
 		{BDC7C0CD-B3C9-4112-B9FF-ABF29F1A8722}.Debug|x64.ActiveCfg = Debug|x64
-		{BDC7C0CD-B3C9-4112-B9FF-ABF29F1A8722}.Debug|x64.Build.0 = Debug|x64
 		{BDC7C0CD-B3C9-4112-B9FF-ABF29F1A8722}.Release|x64.ActiveCfg = Release|x64
 		{BDC7C0CD-B3C9-4112-B9FF-ABF29F1A8722}.Release|x64.Build.0 = Release|x64
+		{EF44B977-1CD7-4ED7-9B76-9352CF696995}.Debug|x64.ActiveCfg = Debug|x64
+		{EF44B977-1CD7-4ED7-9B76-9352CF696995}.Debug|x64.Build.0 = Debug|x64
+		{EF44B977-1CD7-4ED7-9B76-9352CF696995}.Release|x64.ActiveCfg = Release|x64
+		{EF44B977-1CD7-4ED7-9B76-9352CF696995}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
