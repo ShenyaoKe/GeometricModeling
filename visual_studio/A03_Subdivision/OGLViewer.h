@@ -111,6 +111,7 @@ private: // OpenGL variables
 	bool drawPoint = false;
 	bool drawWireFrame = false;
 	vector<GLuint> vao_handles;
+	GLuint subd_vao;
 
 	friend class MainWindow;
 };

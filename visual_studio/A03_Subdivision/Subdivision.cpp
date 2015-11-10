@@ -225,5 +225,7 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 	ret->vertSet.insert(ecSet.begin(), ecSet.end());
 	ret->vertSet.insert(fcSet.begin(), fcSet.end());
 
+	ret->reIndexing();
+
 	return ret;
 }

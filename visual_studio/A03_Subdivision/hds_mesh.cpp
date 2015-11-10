@@ -48,6 +48,10 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		{
 			// Vertex attributes
 			int curVID = f.vtx[i] - 1;
+			if (curVID < 0)
+			{
+				continue;
+			}
 			int nextVID = f.vtx[(i + 1) % 4] - 1;
 			int curSNID = f.n[i] - 1;
 			int curSUVID = f.uv[i] - 1;
@@ -238,6 +242,31 @@ bool HDS_Mesh::validateVertex(vert_t *v) const
 		if( edgeCount > maxEdges ) return false;
 	} while( curHe != he );
 	return true;
+}
+
+void HDS_Mesh::reIndexing()
+{
+	vertMap.clear();
+	HDS_Vertex::resetIndex();
+	for (auto vert : vertSet)
+	{
+		vert->index = HDS_Vertex::assignIndex();
+		vertMap.insert(make_pair(vert->index, vert));
+	}
+	heMap.clear();
+	HDS_HalfEdge::resetIndex();
+	for (auto he : heSet)
+	{
+		he->index = HDS_HalfEdge::assignIndex();
+		heMap.insert(make_pair(he->index, he));
+	}
+	faceMap.clear();
+	HDS_Vertex::resetIndex();
+	for (auto face : faceSet)
+	{
+		face->index = HDS_Face::assignIndex();
+		faceMap.insert(make_pair(face->index, face));
+	}
 }
 
 void HDS_Mesh::validate() const

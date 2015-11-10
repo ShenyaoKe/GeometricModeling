@@ -14,17 +14,19 @@ OGLViewer::OGLViewer(QWidget *parent)
 	this->setFormat(format);
 
 	// Link timer trigger
-	process_time.start();
+	/*process_time.start();
 	QTimer *timer = new QTimer(this);
-	/*timer->setSingleShot(false);*/
+	/ *timer->setSingleShot(false);* /
 	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-	timer->start(0);
+	timer->start(0);*/
 
 	// Read obj file
 	box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	model_mesh = new Mesh("../../scene/obj/monkey.obj");
-	hds_box = new HDS_Mesh("../../scene/obj/tooth.obj");
-	subd_mesh = new Subdivision(4, hds_box);
+	hds_box = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+	hds_box->reIndexing();
+	hds_box->validate();
+	subd_mesh = new Subdivision(2, hds_box);
 
 	resetCamera();
 }
@@ -74,8 +76,9 @@ void OGLViewer::initializeGL()
 	subd_mesh->exportIndexedVBO(1, &box_verts, nullptr, nullptr, &box_idxs);
 	model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
 
-	vao_handles.push_back(bindBox());
-	vao_handles.push_back(bindMesh());
+	subd_vao = bindBox();
+	//vao_handles.push_back(bindBox());
+	//vao_handles.push_back(bindMesh());
 
 	// Get uniform variable location
 	shader->add_uniformv("model_matrix");
@@ -165,7 +168,7 @@ void OGLViewer::paintGL()
 	// Make curent window
 	makeCurrent();
 	// Clear background and color buffer
-	//glClearColor(0.6, 0.6, 0.6, 1.0);
+	glClearColor(0.6, 0.6, 0.6, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Points
@@ -195,8 +198,8 @@ void OGLViewer::paintGL()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 	
-	//glBindVertexArray(vao_handles[0]);
-	bindBox();
+	//glBindVertexArray(subd_vao);
+	subd_vao = bindBox();
 	// Use shader program
 	box_shader->use_program();
 
@@ -213,6 +216,7 @@ void OGLViewer::paintGL()
 	{
 		glDrawElements(GL_TRIANGLES, box_idxs.size(), GL_UNSIGNED_INT, 0);
 	}
+	box_shader->unuse();
 
 	point_shader->use_program();
 	glUniformMatrix4fv((*point_shader)("view_matrix"), 1, GL_FALSE, view_mat);
@@ -223,7 +227,8 @@ void OGLViewer::paintGL()
 		glPointSize(6.0);
 		glDrawArrays(GL_POINTS, 0, box_verts.size());
 	}
-	
+	point_shader->unuse();
+	glDeleteVertexArrays(1, &subd_vao);
 	//////////////////////////////////////////////////////////////////////////
 	/*glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); // cull back face
@@ -307,16 +312,16 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		//offset = min(++offset, (int)box_idxs.size() / 3 - 1);
 		subd_lv = min(++subd_lv, (int)subd_mesh->getLevel());
 		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
-		/*glDeleteVertexArrays(1, &vao_handles[0]);
-		vao_handles[0] = bindBox();*/
+		//glDeleteVertexArrays(1, &subd_vao);
+		//subd_vao = bindBox();
 	}
 	else if (e->key() == Qt::Key_Minus)
 	{
 		//offset = max(--offset, 0);
 		subd_lv = max(--subd_lv, 0);
 		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
-		/*glDeleteVertexArrays(1, &vao_handles[0]);
-		vao_handles[0] = bindBox();*/
+		//glDeleteVertexArrays(1, &subd_vao);
+		//subd_vao = bindBox();
 	}
 	else if (e->key() == Qt::Key_Left)
 	{

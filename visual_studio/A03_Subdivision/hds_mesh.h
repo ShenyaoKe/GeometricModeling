@@ -33,6 +33,8 @@ public:
 
 	HDS_Mesh operator=(const HDS_Mesh& rhs);
 
+	void reIndexing();
+
 	void validate() const;
 	//void printInfo(const string &msg = "");
 	//void printMesh(const string &msg = "");
