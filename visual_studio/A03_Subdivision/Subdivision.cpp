@@ -10,7 +10,7 @@ Subdivision::Subdivision(uint lv, const HDS_Mesh* origin)
 	for (int i = 0; i < level; i++)
 	{
 		mesh_t* subd_ret = subdivide(curMesh);
-		cout << "Subdivided at level " << i + 1 << endl;
+		cout << "Subdivided at level " << i + 1 << "\n\t";
 		subd_mesh.push_back(subd_ret);
 		curMesh = subd_ret;
 	}
@@ -43,11 +43,19 @@ void Subdivision::exportIndexedVBO(int lv,
 mesh_t* Subdivision::subdivide(const mesh_t* origin)
 {
 	mesh_t* ret = new mesh_t(*origin);
-	ret->validate();
-	unordered_set<vert_t*> fcSet;
+	
+#ifdef _DEBUG
+	clock_t subdiv_start, start_time, end_time;//Timer
+	subdiv_start = start_time = clock();
+#endif
+	unordered_set<vert_t*> fcSet; 
 	unordered_set<vert_t*> ecSet;
 	unordered_map<face_t*, vert_t*> fcMap;
 	unordered_map<he_t*, vert_t*> ecMap;
+	fcSet.reserve(ret->faceSet.size());
+	ecSet.reserve(ret->heSet.size() / 2);
+	fcMap.reserve(ret->faceSet.size());
+	ecMap.reserve(ret->heSet.size());
 	int index = ret->vertSet.size();
 
 	// Insert center face
@@ -59,17 +67,28 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 		fcMap.insert(make_pair(face, fc));
 		ret->vertMap.insert(make_pair(fc->index, fc));
 	}
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tGenerate Face Center:\t" << end_time - start_time << "ms\n";
+	start_time = clock();
+#endif
 	// Insert vertex on edge
-	auto unvisitedEdge = ret->heSet;
+	auto unvisitedEdge = ret->heMap;
+	vector<bool> visited(ret->heSet.size(), false);
 	for (auto edge : ret->heSet)
 	{
-		if (unvisitedEdge.find(edge) == unvisitedEdge.end())
+		/*if (unvisitedEdge.find(edge->index) == unvisitedEdge.end())
 		{
 			// If visited, conitue loop
 			continue;
 		}
-		unvisitedEdge.erase(edge);
-		unvisitedEdge.erase(edge->flip);
+		unvisitedEdge.erase(edge->index);
+		unvisitedEdge.erase(edge->flip->index);*/
+		if (visited[edge->index])
+		{
+			continue;
+		}
+		visited[edge->index] = visited[edge->flip->index] = true;
 
 		int neighbourCount = 2;
 		QVector3D pos = edge->v->pos + edge->flip->v->pos;
@@ -93,7 +112,13 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 		ecMap.insert(make_pair(edge->flip, ec));
 		ret->vertMap.insert(make_pair(ec->index, ec));
 	}
-
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tGenerate Edge Center:\t" << end_time - start_time << "ms\n";
+	start_time = clock();
+#endif
+	// Catmull coefficiencies
+	float catmull[2] = { -1, 4 };//{1, 2}
 	// Modify original vertex
 	for (auto vert : ret->vertSet)
 	{
@@ -117,15 +142,20 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 		{
 			avgFC += v->pos;
 		}
-		vert->pos -= avgFC / static_cast<float>(neighborFC.size() * neighborFC.size());
+		vert->pos += catmull[0] * avgFC / static_cast<float>(neighborFC.size() * neighborFC.size());
 
 		QVector3D avgEC;
 		for (auto v : neighborEC)
 		{
 			avgEC += v->pos;
 		}
-		vert->pos += 4.0 * avgEC / static_cast<float>(neighborEC.size() * neighborEC.size());
+		vert->pos += catmull[1] * avgEC / static_cast<float>(neighborEC.size() * neighborEC.size());
 	}
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tMoving Original Position:\t" << end_time - start_time << "ms\n";
+	start_time = clock();
+#endif
 	// insert edge center and connect edges
 	unordered_set<he_t*> nheSet;
 	nheSet.reserve(ecSet.size() * 4);
@@ -141,9 +171,18 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 		nhe->index = HDS_HalfEdge::assignIndex();
 		nhef->index = HDS_HalfEdge::assignIndex();
 		nhe->v = nhef->v = v;
+		/*auto heprev = he->prev;
+		auto hefprev = hef->prev;
+		nhe->next = he; nhe->prev = heprev;
+		nhe->next->prev = nhe; nhe->prev->next = nhe;
+		nhef->next = hef; nhe->prev = hefprev;
+		nhef->next->prev = nhef; nhef->prev->next = nhef;
+		/ *he->prev = heprev->next = nhe;
+		hef->prev = hefprev->next = nhef;*/
+
 		nhe->next = he; nhe->prev = he->prev; he->prev->next = nhe; he->prev = nhe;
 		nhef->next = hef; nhef->prev = hef->prev; hef->prev->next = nhef; hef->prev = nhef;
-		hev->he = nhef; hefv->he = nhe;
+		hev->he = nhef; hefv->he = nhe;//*/
 
 		nhe->flip = hef;
 		hef->flip = nhe;
@@ -156,7 +195,11 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 		ret->heMap.insert(make_pair(nhe->index, nhe));
 		ret->heMap.insert(make_pair(nhef->index, nhef));
 	}
-
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tInsert Edge Center:\t" << end_time - start_time << "ms\n";
+	start_time = clock();
+#endif
 	// Insert face centers
 	for (auto face_query : fcMap)
 	{
@@ -167,6 +210,12 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 		vector<he_t*> newHE;
 		do 
 		{
+			/*face_t* newface = new face_t;
+			newface->he = curHE;
+			newface->index = HDS_Face::assignIndex();
+			ret->faceSet.insert(newface);
+			ret->faceMap.insert(make_pair(newface->index, newface));*/
+
 			curHE = curHE->next;
 			//vert_t* newv = curHE->v;
 
@@ -180,6 +229,8 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 			nhef->v = curHE->v;
 			nhe->prev = curHE;
 			nhef->next = curHE->next;
+
+			//curHE->prev->prev->f = curHE->prev->f = curHE->f = nhe->f = newface;
 
 			curHE = curHE->next;
 			curHE->prev->next = nhe;
@@ -214,18 +265,33 @@ mesh_t* Subdivision::subdivide(const mesh_t* origin)
 			} while (curHE != he);
 
 		}
+		newHE.back()->f = newHE.back()->next->f;
 		ret->faceSet.erase(face);
 		ret->faceMap.erase(face->index);
 		delete face;
 	}
-
-	ret->validate();
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tInsert Faces:\t" << end_time - start_time << "ms\n";
+	start_time = clock();
+#endif
+	//ret->validate();
 	// Finalize return mesh
 	ret->heSet.insert(nheSet.begin(), nheSet.end());
 	ret->vertSet.insert(ecSet.begin(), ecSet.end());
 	ret->vertSet.insert(fcSet.begin(), fcSet.end());
-
-	ret->reIndexing();
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tMerging:\t" << end_time - start_time << "ms\n";
+	start_time = clock();
+#endif
+	//ret->reIndexing();
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tIndexing:\t" << end_time - start_time << "ms\n";
+	cout << "\t\tSubdivision Time:\t" << (float)(end_time - subdiv_start) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	start_time = clock();
+#endif
 
 	return ret;
 }

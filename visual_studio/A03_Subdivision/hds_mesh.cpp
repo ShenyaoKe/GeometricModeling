@@ -4,7 +4,17 @@ using namespace std;
 
 HDS_Mesh::HDS_Mesh(const string &filename)
 {
+#ifdef _DEBUG
+	clock_t start_time, end_time;//Timer
+	start_time = clock();
+#endif
+
 	MeshLoader meshIndex(filename);
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "Loading File " << filename << " as index Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	start_time = clock();
+#endif
 	// Alias for clean code
 	auto& vertices = meshIndex.vertices;
 	auto& uvs = meshIndex.uvs;
@@ -116,10 +126,20 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		heSet.insert(hef);
 		heMap.insert(make_pair(hef->index, hef));
 	}
+
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "Building HDS_Mesh " << filename << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	//start_time = clock();
+#endif
 }
 
 HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
 {
+#ifdef _DEBUG
+	clock_t start_time, end_time;//Timer
+	start_time = clock();
+#endif
 	// copy the vertices set
 	vertSet.clear();
 	vertMap.clear();
@@ -192,6 +212,11 @@ HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
 		}
 		return minZa < minZb;
 	});*/
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "Copy HDS_Mesh from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	//start_time = clock();
+#endif
 }
 
 HDS_Mesh::~HDS_Mesh()

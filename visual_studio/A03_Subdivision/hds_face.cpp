@@ -64,13 +64,16 @@ set<HDS_Face *> HDS_Face::connectedFaces()
 
 QVector3D HDS_Face::center() const
 {
-	auto cs = corners();
+	auto curHE = he;
+
 	QVector3D c;
-	for(auto p : cs)
-	{
-		c += p->pos;
-	}
-	c /= (qreal) cs.size();
+	int count = 0;
+	do {
+		c += curHE->v->pos;
+		count++;
+		curHE = curHE->next;
+	} while (curHE != he);
+	c /= (qreal) count;
 	return c;
 }
 

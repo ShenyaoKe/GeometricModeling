@@ -23,10 +23,10 @@ OGLViewer::OGLViewer(QWidget *parent)
 	// Read obj file
 	box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	model_mesh = new Mesh("../../scene/obj/monkey.obj");
-	hds_box = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+	hds_box = new HDS_Mesh("../../scene/obj/dragon.obj");
 	hds_box->reIndexing();
 	hds_box->validate();
-	subd_mesh = new Subdivision(2, hds_box);
+	subd_mesh = new Subdivision(3, hds_box);
 
 	resetCamera();
 }
@@ -428,7 +428,7 @@ void OGLViewer::resetCamera()
 {
 	Transform cam2w = lookAt(Point3D(10, 6, 10), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
 	Transform pers = Transform(setPerspective(67,
-		width() / static_cast<double>(height()), 0.1, 100));
+		width() / static_cast<double>(height()), 0.1, 500));
 	view_cam = new perspCamera(cam2w, pers);
 	view_cam->exportVBO(view_mat, proj_mat, nullptr);
 	//update();
