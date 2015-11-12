@@ -11,6 +11,12 @@ MainWindow::MainWindow(QWidget *parent)
 	//setWindowTitle(tr("OpenGL Qt Template"));
 
 	m_oglviewer->setFocusPolicy(Qt::StrongFocus);
+
+	connect(ui.actionOpen, &QAction::triggered, m_oglviewer, &OGLViewer::loadOBJ);
+	connect(ui.actionSave, &QAction::triggered, m_oglviewer, &OGLViewer::saveOBJ);
+
+	connect(ui.smooth, &QPushButton::clicked, m_oglviewer, &OGLViewer::smoothMesh);
+	connect(m_oglviewer, SIGNAL(levelChanged(int)), ui.lv_label, SLOT(setNum(int)));
 }
 
 MainWindow::~MainWindow()

@@ -11,6 +11,7 @@
 #include <QTime>
 #include <QString>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QOpenGLVertexArrayObject>
 //#include <QGLFunctions>
 
@@ -78,6 +79,11 @@ public:
 	public slots:
 	void resetCamera();
 	void initParas();
+	void loadOBJ();
+	void saveOBJ();
+	void smoothMesh();
+signals:
+	void levelChanged(int level);
 protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;

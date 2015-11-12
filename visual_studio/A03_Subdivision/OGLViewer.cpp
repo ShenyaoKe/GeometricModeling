@@ -13,20 +13,17 @@ OGLViewer::OGLViewer(QWidget *parent)
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 
-	// Link timer trigger
-	/*process_time.start();
-	QTimer *timer = new QTimer(this);
-	/ *timer->setSingleShot(false);* /
-	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-	timer->start(0);*/
-
 	// Read obj file
-	box_mesh = new Mesh("../../scene/obj/cube_large.obj");
-	model_mesh = new Mesh("../../scene/obj/monkey.obj");
-	hds_box = new HDS_Mesh("../../scene/obj/dragon.obj");
-	hds_box->reIndexing();
-	hds_box->validate();
-	subd_mesh = new Subdivision(3, hds_box);
+	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
+	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
+#ifdef _DEBUG
+	hds_box = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+#else
+	hds_box = new HDS_Mesh("quad_cube.obj");
+#endif
+	//hds_box->reIndexing();
+	//hds_box->validate();
+	subd_mesh = new Subdivision(0, hds_box);
 
 	resetCamera();
 }
@@ -72,9 +69,9 @@ void OGLViewer::initializeGL()
 	// Export vbo for shaders
 	//box_mesh->exportVBO(box_vbo_size, box_verts, box_uvs, box_norms);
 	//box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	//hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	subd_mesh->exportIndexedVBO(1, &box_verts, nullptr, nullptr, &box_idxs);
-	model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
+	hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
+	subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
+	//model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
 
 	subd_vao = bindBox();
 	//vao_handles.push_back(bindBox());
@@ -92,6 +89,56 @@ void OGLViewer::initializeGL()
 	point_shader->add_uniformv("proj_matrix");
 
 	cout << "Selection ID loc:" << sel_id_loc << endl;
+}
+
+void OGLViewer::loadOBJ()
+{
+	QString filename = QFileDialog::getOpenFileName(
+		this, "Load OBJ file...", "dragon.obj", tr("Object Files(*.obj)"));
+	if (filename.size() > 0)
+	{
+		delete hds_box;
+		delete subd_mesh;
+		hds_box = new HDS_Mesh(filename.toUtf8().constData());
+		subd_lv = 0;
+		subd_mesh = new Subdivision(0, hds_box);
+		subd_mesh->exportIndexedVBO(0, &box_verts, nullptr, nullptr, &box_idxs);
+
+		emit levelChanged(subd_lv);
+		update();
+	}
+}
+
+void OGLViewer::saveOBJ()
+{
+	QString filename = QFileDialog::getSaveFileName(
+		this, "Save OBJ file...", "default");
+	if (filename.size() > 0)
+	{
+		filename.append("_"+QString::number(subd_lv)+".obj");
+		subd_mesh->saveAsOBJ(subd_lv, filename.toUtf8().constData());
+	}
+}
+
+void OGLViewer::smoothMesh()
+{
+	if (subd_lv >= 4)
+	{
+		int ret = QMessageBox::warning(this, tr("Warning"),
+			tr("Current mesh is smoothed more than level 4!\n"
+			"Do you still want to smooth it?"),
+			QMessageBox::Yes | QMessageBox::Cancel);
+		if (ret == QMessageBox::Cancel)
+		{
+			return;
+		}
+	}
+	subd_mesh->subdivide();
+	subd_lv = subd_mesh->getLevel();
+	subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
+
+	emit levelChanged(subd_lv);
+	update();
 }
 
 GLuint OGLViewer::bindBox()
@@ -312,16 +359,15 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		//offset = min(++offset, (int)box_idxs.size() / 3 - 1);
 		subd_lv = min(++subd_lv, (int)subd_mesh->getLevel());
 		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
-		//glDeleteVertexArrays(1, &subd_vao);
-		//subd_vao = bindBox();
+
+		emit levelChanged(subd_lv);
 	}
 	else if (e->key() == Qt::Key_Minus)
 	{
-		//offset = max(--offset, 0);
 		subd_lv = max(--subd_lv, 0);
 		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
-		//glDeleteVertexArrays(1, &subd_vao);
-		//subd_vao = bindBox();
+
+		emit levelChanged(subd_lv);
 	}
 	else if (e->key() == Qt::Key_Left)
 	{
@@ -426,7 +472,7 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 /************************************************************************/
 void OGLViewer::resetCamera()
 {
-	Transform cam2w = lookAt(Point3D(10, 6, 10), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
+	Transform cam2w = lookAt(Point3D(30, 10, 30), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
 	Transform pers = Transform(setPerspective(67,
 		width() / static_cast<double>(height()), 0.1, 500));
 	view_cam = new perspCamera(cam2w, pers);

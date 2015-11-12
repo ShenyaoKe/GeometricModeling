@@ -18,10 +18,12 @@ class Subdivision
 public:
 
 	Subdivision(uint lv, const mesh_t* origin);
-	Subdivision(const Subdivision* subd_mesh);
+	//Subdivision(const Subdivision* subd_mesh);
 	~Subdivision();
 
+	void subdivide();
 	uint getLevel() const;
+	void saveAsOBJ(uint lv, const char* filename) const;
 	void exportIndexedVBO(int lv = 0,
 		vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
@@ -30,7 +32,7 @@ public:
 private:
 	mesh_t* subdivide(const mesh_t* origin);
 private:
-	uint level;
+	//uint level;
 	const mesh_t* origin_mesh;
 	vector<mesh_t*> subd_mesh;
 };

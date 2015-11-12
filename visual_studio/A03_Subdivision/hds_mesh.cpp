@@ -114,7 +114,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 			prevHE->prev->next = prevHE;
 			prevHE = prevHE->prev;
 		} while (prevHE != beginHE);
-		face->updateVerts();
+		//face->updateVerts();
 		//face->pre_n = face->computeNormal();
 	}
 	for (auto he : heUnassigned)
@@ -126,7 +126,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		heSet.insert(hef);
 		heMap.insert(make_pair(hef->index, hef));
 	}
-
+	reIndexing();
 #ifdef _DEBUG
 	end_time = clock();
 	cout << "Building HDS_Mesh " << filename << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
@@ -198,20 +198,7 @@ HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
 		v->he = heMap.at(v_ref->he->index);
 	}
 
-	/// create the sorted face set
-	/*sortedFaces.assign(faceSet.begin(), faceSet.end());
-	std::sort(sortedFaces.begin(), sortedFaces.end(), [](const face_t *fa, const face_t *fb) {
-		auto ca = fa->corners();
-		auto cb = fb->corners();
-		float minZa = 1e9, minZb = 1e9;
-		for (auto va : ca) {
-			minZa = std::min(va->pos.z(), minZa);
-		}
-		for (auto vb : cb) {
-			minZb = std::min(vb->pos.z(), minZb);
-		}
-		return minZa < minZb;
-	});*/
+
 #ifdef _DEBUG
 	end_time = clock();
 	cout << "Copy HDS_Mesh from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
@@ -318,26 +305,55 @@ void HDS_Mesh::validate() const
 
 void HDS_Mesh::releaseMesh()
 {
-	for (auto vit = vertSet.begin(); vit != vertSet.end(); vit++)
+	/*for (auto vit = vertSet.begin(); vit != vertSet.end(); vit++)
 	{
 		if ((*vit) != nullptr)
 			delete (*vit);
+	}*/
+	for (auto vert : vertSet)
+	{
+		delete vert;
 	}
 	vertSet.clear();
 
-	for (auto fit = faceSet.begin(); fit != faceSet.end(); fit++)
+	/*for (auto fit = faceSet.begin(); fit != faceSet.end(); fit++)
 	{
 		if ((*fit) != nullptr)
 			delete (*fit);
+	}*/
+	for (auto face : faceSet)
+	{
+		delete face;
 	}
 	faceSet.clear();
 
-	for (auto heit = heSet.begin(); heit != heSet.end(); heit++)
+	/*for (auto heit = heSet.begin(); heit != heSet.end(); heit++)
 	{
 		if ((*heit) != nullptr)
 			delete (*heit);
+	}*/
+	for (auto he : heSet)
+	{
+		delete he;
 	}
 	heSet.clear();
+
+	HDS_HalfEdge::resetIndex();
+	
+	vertMap.clear();
+	heMap.clear();
+	faceMap.clear();
+
+	for (auto sn : snSet)
+	{
+		delete sn;
+	}
+	snSet.clear(); snMap.clear();
+	for (auto suv : suvSet)
+	{
+		delete suv;
+	}
+	suvSet.clear(); suvMap.clear();
 }
 
 void HDS_Mesh::exportVBO(int &size,

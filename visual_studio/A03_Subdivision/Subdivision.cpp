@@ -3,11 +3,10 @@
 
 
 Subdivision::Subdivision(uint lv, const HDS_Mesh* origin)
-	: level(lv)
-	, origin_mesh(origin)
+	: origin_mesh(origin)
 {
 	const mesh_t* curMesh = origin_mesh;
-	for (int i = 0; i < level; i++)
+	for (int i = 0; i < lv; i++)
 	{
 		mesh_t* subd_ret = subdivide(curMesh);
 		cout << "Subdivided at level " << i + 1 << "\n\t";
@@ -18,18 +17,71 @@ Subdivision::Subdivision(uint lv, const HDS_Mesh* origin)
 
 Subdivision::~Subdivision()
 {
+	for (auto mesh : subd_mesh)
+	{
+		mesh->releaseMesh();
+	}
+}
+
+
+void Subdivision::subdivide()
+{
+	if (subd_mesh.size() == 0)
+	{
+		subd_mesh.push_back(subdivide(origin_mesh));
+	}
+	else
+	{
+		subd_mesh.push_back(subdivide(subd_mesh.back()));
+	}
 }
 
 uint Subdivision::getLevel() const
 {
-	return level;
+	return subd_mesh.size();
+}
+void Subdivision::saveAsOBJ(uint lv, const char* filename) const
+{
+	const mesh_t* curMesh = lv < 1 ? origin_mesh : subd_mesh[lv - 1];
+
+	FILE *OBJ_File;
+	errno_t err = fopen_s(&OBJ_File, filename, "w");
+	if (err)
+	{
+		printf("Can't write to file %s!\n", filename);
+		return;
+	}
+	fprintf(OBJ_File, "#Subdivision Mesh Level %d\n", lv);
+
+	for (int i = 0; i < curMesh->vertMap.size(); i++)
+	{
+		auto curVert = curMesh->vertMap.at(i);
+		fprintf(OBJ_File, "v %f %f %f\n",
+			curVert->pos.x(), curVert->pos.y(), curVert->pos.z());
+	}
+	for (auto face : curMesh->faceSet)
+	{
+		vector<int> vid;
+		he_t* he = face->he;
+		he_t* curHE = he;
+		fprintf(OBJ_File, "f");
+		do 
+		{
+			fprintf(OBJ_File, " %d/0/0", curHE->v->index + 1);
+			curHE = curHE->next;
+		} while (curHE != he);
+
+		fprintf(OBJ_File, "\n");
+	}
+
+	fclose(OBJ_File);
 }
 
 void Subdivision::exportIndexedVBO(int lv,
 	vector<float>* vtx_array, vector<float>* uv_array,
 	vector<float>* norm_array, vector<uint>* idx_array)
 {
-	if (lv < 1)// 0 or negative value
+	if (lv < 1 || subd_mesh.size() == 0)// 0 or negative value
 	{
 		origin_mesh->exportIndexedVBO(vtx_array, uv_array, norm_array, idx_array);
 	}
