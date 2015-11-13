@@ -438,7 +438,7 @@ void HDS_Mesh::exportVBO(int &size,
 
 void HDS_Mesh::exportIndexedVBO(
 	vector<float>* vtx_array, vector<float>* uv_array,
-	vector<float>* norm_array, vector<uint>* idx_array) const
+	vector<float>* norm_array, vector<ushort>* idx_array) const
 {
 	bool has_vert(false), has_texcoord(false), has_normal(false), has_uid(false);
 
@@ -475,7 +475,8 @@ void HDS_Mesh::exportIndexedVBO(
 		vtx_array->push_back(point->y());
 		vtx_array->push_back(point->z());
 	}
-	for (auto face : faceSet)
+	// Triangle Fans
+	/*for (auto face : faceSet)
 	{
 		he_t* he = face->he;
 		he_t* curHE = he->next;
@@ -486,5 +487,15 @@ void HDS_Mesh::exportIndexedVBO(
 			idx_array->push_back(static_cast<uint>(he->v->index));
 			curHE = curHE->next;
 		} while (curHE->next != he);
+	}*/
+	for (auto face : faceSet)
+	{
+		he_t* he = face->he;
+		he_t* curHE = he;
+		do
+		{
+			idx_array->push_back(static_cast<ushort>(curHE->v->index));
+			curHE = curHE->next;
+		} while (curHE != he);
 	}
 }

@@ -35,7 +35,7 @@ static HDS_Mesh* hds_box;
 static Mesh *box_mesh;// Display object
 static Subdivision* subd_mesh;
 static vector<GLfloat> box_verts;
-static vector<GLuint> box_idxs;
+static vector<GLushort> box_idxs;
 //static GLfloat* box_uvs;// Texture coordinates vbo
 //static GLfloat* box_norms;// Normal coordinates vbo
 

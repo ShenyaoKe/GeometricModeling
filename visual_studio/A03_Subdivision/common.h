@@ -33,5 +33,6 @@ using namespace std;
 
 
 typedef unsigned int uint;
+typedef unsigned short ushort;
 
 #endif // COMMON_H

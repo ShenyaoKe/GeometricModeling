@@ -17,7 +17,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
 #ifdef _DEBUG
-	hds_box = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+	hds_box = new HDS_Mesh("../../scene/obj/quad_cube.obj");
 #else
 	hds_box = new HDS_Mesh("quad_cube.obj");
 #endif
@@ -153,11 +153,11 @@ GLuint OGLViewer::bindBox()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 	if (showPiece)
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * (box_idxs.size() - offset * 3), &box_idxs[offset * 3], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * (box_idxs.size() - offset * 3), &box_idxs[offset * 3], GL_STATIC_DRAW);
 	} 
 	else
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * box_idxs.size(), &box_idxs[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * box_idxs.size(), &box_idxs[0], GL_STATIC_DRAW);
 	}
 
 	// Bind VAO
@@ -257,11 +257,11 @@ void OGLViewer::paintGL()
 	
 	if (showPiece)
 	{
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_LINES_ADJACENCY, 4, GL_UNSIGNED_SHORT, 0);
 	} 
 	else
 	{
-		glDrawElements(GL_TRIANGLES, box_idxs.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_LINES_ADJACENCY, box_idxs.size(), GL_UNSIGNED_SHORT, 0);
 	}
 	box_shader->unuse();
 
