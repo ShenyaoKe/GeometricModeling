@@ -2,7 +2,7 @@
 
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
-	, m_selectMode(OBJECT_SELECT), m_Select(0)
+	, m_selectMode(OBJECT_SELECT), m_Select(-1)
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -78,7 +78,7 @@ void OGLViewer::initializeGL()
 
 	// Create shader files
 	shader = new GLSLProgram("vert.glsl", "frag.glsl");
-	//shader_transparent = new GLSLProgram("vert.glsl", "transparent_frag.glsl");
+	shader_uid = new GLSLProgram("id_vs.glsl", "id_fs.glsl");
 	
 	// Export vbo for shaders
 	//box_mesh->exportVBO(box_vbo_size, &box_verts, &box_uvs, &box_norms, &box_idxs);
@@ -88,14 +88,13 @@ void OGLViewer::initializeGL()
 	bindMesh();
 
 	// Get uniform variable location
-	model_mat_loc = shader->getUniformLocation("model_matrix");
-	view_mat_loc = shader->getUniformLocation("view_matrix");
-	proj_mat_loc = shader->getUniformLocation("proj_matrix");; // WorldToCamera matrix
-	sel_id_loc = shader->getUniformLocation("sel_id");
-	cout << "Model matrix location: " << model_mat_loc << endl;
-	cout << "View matrix location: " << view_mat_loc << endl;
-	cout << "Projection matrix location: " << proj_mat_loc << endl;
-	cout << "Selection ID loc:" << sel_id_loc << endl;
+	shader->add_uniformv("model_matrix");
+	shader->add_uniformv("view_matrix");
+	shader->add_uniformv("proj_matrix");// WorldToCamera matrix
+	shader->add_uniformv("sel_id");
+	shader_uid->add_uniformv("model_matrix");
+	shader_uid->add_uniformv("view_matrix");
+	shader_uid->add_uniformv("proj_matrix");
 
 }
 void OGLViewer::keyPressEvent(QKeyEvent *e)
@@ -165,20 +164,10 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	{
 		// Do something here
 	}
-	if (e->buttons() == Qt::LeftButton && !e->modifiers())
+	if (e->buttons() == Qt::LeftButton && e->modifiers() == Qt::NoModifier)
 	{
-		Ray inRay = view_cam->shootRay(m_lastMousePos[0], height() - m_lastMousePos[1]);
-		double tHit = INFINITY, re = 0.001;
-		DifferentialGeometry queryPoint;
-		if (mytree->hit(inRay, &queryPoint, &tHit, &re))
-		{
-			m_Select = queryPoint.object->getIndex();
-			cout <<"Selected Face ID: "<< m_Select << endl;
-		}
-		else
-		{
-			m_Select = 0;
-		}
+		renderUidBuffer();
+		update();
 	}
 };
 
@@ -297,6 +286,34 @@ void OGLViewer::bindMesh()
 	vao_handles.push_back(model_vao);
 }
 
+void OGLViewer::renderUidBuffer()
+{
+	makeCurrent();
+	QOpenGLFramebufferObject qfbo(width(), height(), QOpenGLFramebufferObject::CombinedDepthStencil, GL_TEXTURE_2D);
+	qfbo.bind();
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK); // cull back face
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	glBindVertexArray(vao_handles[1]);
+	shader_uid->use_program();
+
+	// Apply uniform matrix
+	//glUniformMatrix4fv((*shader_id)("model_matrix"), 1, GL_FALSE, model_mat);
+	glUniformMatrix4fv((*shader_uid)("view_matrix"), 1, GL_FALSE, view_mat);
+	glUniformMatrix4fv((*shader_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	glDrawArrays(GL_TRIANGLES, 0, model_vbo_size * 3);
+	shader_uid->unuse();
+	qfbo.release();
+	QRgb pixel = qfbo.toImage().pixel(m_lastMousePos[0], m_lastMousePos[1]);
+
+	if ((pixel >> 24) & 0xFF) m_Select = pixel & 0xFFFFFF;
+	else m_Select = -1;
+}
+
 void OGLViewer::saveFrameBuffer()
 {
 	this->grab().save("../../scene/texture/framebuffer.png");
@@ -350,10 +367,10 @@ void OGLViewer::paintGL()
 	shader->use_program();
 
 	// Apply uniform matrix
-	//glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, sphere_model_mat);
-	glUniformMatrix4fv(view_mat_loc, 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv(proj_mat_loc, 1, GL_FALSE, proj_mat);
-	glUniform1i(sel_id_loc, m_Select);
+	//glUniformMatrix4fv((*shader)("model_matrix"), 1, GL_FALSE, sphere_model_mat);
+	glUniformMatrix4fv((*shader)("view_matrix"), 1, GL_FALSE, view_mat);
+	glUniformMatrix4fv((*shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	glUniform1i((*shader)("sel_id"), m_Select);
 	glDrawArrays(GL_TRIANGLES, 0, model_vbo_size * 3);
 
 

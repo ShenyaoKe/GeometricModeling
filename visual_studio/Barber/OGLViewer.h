@@ -10,7 +10,8 @@
 #include <QTime>
 #include <QString>
 #include <QFileDialog>
-#include <QOpenGLVertexArrayObject>
+#include <QOpenGLFramebufferObject>
+//#include <QOpenGLVertexArrayObject>
 //#include <QGLFunctions>
 
 #include "OpenGL_Utils/GLSLProgram.h"
@@ -35,7 +36,7 @@ static GLfloat* box_norms;// Normal coordinates vbo
 static GLint* box_idxs;
 static int box_vbo_size;// Triangle face numbers
 static GLSLProgram* shader;// OpenGL shader program
-static GLSLProgram* shader_transparent;// OpenGL shader program
+static GLSLProgram* shader_uid;// OpenGL shader program
 static Matrix4D matrix;// Transform matrix
 
 static int model_mat_loc;// Uniform matrix location
@@ -90,6 +91,7 @@ protected:
 private:
 	void bindBox();
 	void bindMesh();
+	void renderUidBuffer();
 	void saveFrameBuffer();
 public:
 	double process_fps;

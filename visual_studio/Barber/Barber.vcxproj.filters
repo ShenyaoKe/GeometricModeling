@@ -36,6 +36,12 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{3c91046a-2b4b-4919-93a7-208d239378b9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\HDS">
+      <UniqueIdentifier>{93630916-3bb7-4ee3-baa6-a0c9cce30c1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\HDS">
+      <UniqueIdentifier>{d7174265-8346-4165-9b8a-be7746497cf0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -61,6 +67,21 @@
     </ClCompile>
     <ClCompile Include="GeneratedFiles\Release\moc_OGLViewer.cpp">
       <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\MeshLoader.cpp">
+      <Filter>Source Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_vertex.cpp">
+      <Filter>Source Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_mesh.cpp">
+      <Filter>Source Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_halfedge.cpp">
+      <Filter>Source Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_face.cpp">
+      <Filter>Source Files\HDS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -97,6 +118,24 @@
     <ClInclude Include="GeneratedFiles\ui_About.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\hds_face.h">
+      <Filter>Header Files\HDS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hds_halfedge.h">
+      <Filter>Header Files\HDS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hds_mesh.h">
+      <Filter>Header Files\HDS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hds_vertex.h">
+      <Filter>Header Files\HDS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\MeshLoader.h">
+      <Filter>Header Files\HDS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vert.glsl">
@@ -105,11 +144,14 @@
     <None Include="frag.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="transparent_frag.glsl">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="stylesheet.qss">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="id_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="id_vs.glsl">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

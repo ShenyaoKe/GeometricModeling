@@ -80,6 +80,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\hds_face.cpp" />
+    <ClCompile Include="..\..\src\hds_halfedge.cpp" />
+    <ClCompile Include="..\..\src\hds_mesh.cpp" />
+    <ClCompile Include="..\..\src\hds_vertex.cpp" />
+    <ClCompile Include="..\..\src\MeshLoader.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_MainWindow.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -145,6 +150,12 @@
     <Image Include="ProjectIcon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\common.h" />
+    <ClInclude Include="..\..\src\hds_face.h" />
+    <ClInclude Include="..\..\src\hds_halfedge.h" />
+    <ClInclude Include="..\..\src\hds_mesh.h" />
+    <ClInclude Include="..\..\src\hds_vertex.h" />
+    <ClInclude Include="..\..\src\MeshLoader.h" />
     <ClInclude Include="GeneratedFiles\ui_About.h" />
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h" />
     <CustomBuild Include="OGLViewer.h">
@@ -170,8 +181,9 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\uic.exe" -o ".\GeneratedFiles\ui_%(Filename).h" "%(FullPath)"</Command>
     </CustomBuild>
     <None Include="frag.glsl" />
+    <None Include="id_fs.glsl" />
+    <None Include="id_vs.glsl" />
     <None Include="stylesheet.qss" />
-    <None Include="transparent_frag.glsl" />
     <None Include="vert.glsl" />
   </ItemGroup>
   <ItemGroup>
@@ -184,7 +196,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="msvc2013_64_opengl" MocOptions="" />
+      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="$(DefaultQtVersion)" MocOptions="" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>
