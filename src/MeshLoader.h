@@ -21,9 +21,9 @@ struct FaceIndex
 };
 struct QuadFaceIndex
 {
-	int vtx[4];	//vertex
-	int uv[4];	//texture coordinate
-	int n[4];	//normal
+	int vtx[4] = {};	//vertex
+	int uv[4] = {};	//texture coordinate
+	int n[4] = {};	//normal
 	void printInfo() const
 	{
 		cout << "Quad face index: ";

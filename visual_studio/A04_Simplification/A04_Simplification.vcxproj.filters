@@ -68,23 +68,23 @@
     <ClCompile Include="GeneratedFiles\Release\moc_OGLViewer.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\hds_face.cpp">
-      <Filter>Source Files\HDS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\hds_halfedge.cpp">
-      <Filter>Source Files\HDS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\hds_mesh.cpp">
-      <Filter>Source Files\HDS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\hds_vertex.cpp">
-      <Filter>Source Files\HDS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\MeshLoader.cpp">
-      <Filter>Source Files\HDS</Filter>
-    </ClCompile>
     <ClCompile Include="Simplification.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_face.cpp">
+      <Filter>Header Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_halfedge.cpp">
+      <Filter>Header Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_mesh.cpp">
+      <Filter>Header Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hds_vertex.cpp">
+      <Filter>Header Files\HDS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\MeshLoader.cpp">
+      <Filter>Header Files\HDS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -121,6 +121,12 @@
     <ClInclude Include="GeneratedFiles\ui_About.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="Simplification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\hds_face.h">
       <Filter>Header Files\HDS</Filter>
     </ClInclude>
@@ -135,12 +141,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\MeshLoader.h">
       <Filter>Header Files\HDS</Filter>
-    </ClInclude>
-    <ClInclude Include="Simplification.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
