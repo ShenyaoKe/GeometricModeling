@@ -356,6 +356,27 @@ void HDS_Mesh::releaseMesh()
 	suvSet.clear(); suvMap.clear();
 }
 
+void HDS_Mesh::collapse(HDS_HalfEdge* he, const QVector3D &newPos)
+{
+	// Triangular mesh only
+	auto hef = he->flip;
+
+	// Move vertex to new position
+	he->v->pos = newPos;
+
+	// Remove opposite vertex and re-assign it to he->v
+	auto curHE = hef->next->flip;
+	do 
+	{
+		curHE->v = he->v;
+		curHE = curHE->next->flip;
+	} while (curHE != he);
+
+	// Assign flip edge
+	HDS_HalfEdge::connectEdges(he->next->flip, he->prev->flip);
+	HDS_HalfEdge::connectEdges(hef->next->flip, hef->prev->flip);
+}
+
 void HDS_Mesh::extrude(HDS_Face* face)
 {
 	if (face == nullptr)

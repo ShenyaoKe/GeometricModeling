@@ -45,14 +45,17 @@ set<HDS_Face *> HDS_Face::connectedFaces()
 	set<HDS_Face*> faces;
 	queue<HDS_Face*> Q;
 	Q.push(this);
-	while( !Q.empty() ) {
+	while(!Q.empty())
+	{
 		auto cur = Q.front();
 		Q.pop();
 		faces.insert(cur);
 		auto curHE = cur->he;
-		do {
+		do
+		{
 			auto f = curHE->flip->f;
-			if( faces.find(f) == faces.end() ) {
+			if(faces.find(f) == faces.end())
+			{
 				faces.insert(f);
 			}
 			curHE = curHE->next;
@@ -68,7 +71,8 @@ QVector3D HDS_Face::center() const
 
 	QVector3D c;
 	int count = 0;
-	do {
+	do
+	{
 		c += curHE->v->pos;
 		count++;
 		curHE = curHE->next;
@@ -81,7 +85,8 @@ vector<HDS_Vertex*> HDS_Face::corners() const
 {
 	HDS_HalfEdge *curHE = he;
 	vector<HDS_Vertex*> corners;
-	do {
+	do
+	{
 		corners.push_back(curHE->v);
 		curHE = curHE->next;
 	} while( curHE != he );
@@ -90,10 +95,10 @@ vector<HDS_Vertex*> HDS_Face::corners() const
 
 QVector3D HDS_Face::computeNormal()
 {
-	n = QVector3D::crossProduct(v[2]->pos - v[0]->pos, v[3]->pos - v[1]->pos);
-	n.normalize();
-	/*QVector3D c = center();
+	//n = QVector3D::crossProduct(v[2]->pos - v[0]->pos, v[3]->pos - v[1]->pos);
+	//n.normalize();
+	QVector3D c = center();
 	n = QVector3D::crossProduct(he->v->pos - c, he->next->v->pos - c);
-	n.normalize();*/
+	n.normalize();
 	return n;
 }

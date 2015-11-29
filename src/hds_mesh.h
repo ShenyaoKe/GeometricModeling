@@ -40,6 +40,7 @@ public:
 	//void printMesh(const string &msg = "");
 	void releaseMesh();
 
+	void collapse(HDS_HalfEdge* he, const QVector3D &newPos);
 	void extrude(HDS_Face* face);
 
 	void exportVBO(int &size,
