@@ -257,11 +257,11 @@ void OGLViewer::paintGL()
 
 	if (showPiece)
 	{
-		glDrawElements(GL_LINES_ADJACENCY, 4, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
 	}
 	else
 	{
-		glDrawElements(GL_LINES_ADJACENCY, box_idxs.size(), GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, box_idxs.size(), GL_UNSIGNED_SHORT, 0);
 	}
 	box_shader->unuse();
 

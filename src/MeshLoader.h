@@ -9,6 +9,18 @@ struct FaceIndex
 	vector<int> vtx;	//vertex
 	vector<int> uv;	//texture coordinate
 	vector<int> n;	//normal
+	FaceIndex(int const* indices , int len)
+	{
+		vtx.reserve(len);
+		uv.reserve(len);
+		n.reserve(len);
+		for (int i = 0; i < len; i++)
+		{
+			vtx.push_back(*indices++);
+			uv.push_back(*indices++);
+			n.push_back(*indices++);
+		}
+	}
 	void printInfo() const
 	{
 		cout << "Quad face index: ";
@@ -45,6 +57,7 @@ private:
 	vector<QVector3D> vertices;
 	vector<QVector2D> uvs;
 	vector<QVector3D> normals;
-	vector<QuadFaceIndex> fids;
+	//vector<QuadFaceIndex> fids;
+	vector<FaceIndex> fids;
 };
 

@@ -41,19 +41,23 @@ MeshLoader::MeshLoader(const string &filename)
 		}
 		else if (strcmp(lineHeader, "f") == 0)
 		{
-			QuadFaceIndex faceIndex;
-			//int faceIndex[3][3];
+			//QuadFaceIndex faceIndex;
+			int idxBuf[12] = {};
 			// Does not support empty uv or normal
-			int iv, iuv, inorm;
-			//fgets(lineHeader, _countof(lineHeader), file);
 
 			fscanf_s(file, " %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d\n",
-				&faceIndex.vtx[0], &faceIndex.uv[0], &faceIndex.n[0],
-				&faceIndex.vtx[1], &faceIndex.uv[1], &faceIndex.n[1],
-				&faceIndex.vtx[2], &faceIndex.uv[2], &faceIndex.n[2],
-				&faceIndex.vtx[3], &faceIndex.uv[3], &faceIndex.n[3]);
-
-			fids.push_back(faceIndex);
+				&idxBuf[0], &idxBuf[1], &idxBuf[2],
+				&idxBuf[3], &idxBuf[4], &idxBuf[5],
+				&idxBuf[6], &idxBuf[7], &idxBuf[8],
+				&idxBuf[9], &idxBuf[10], &idxBuf[11]);
+			if (idxBuf[9] == 0)
+			{
+				fids.push_back(FaceIndex(idxBuf, 3));
+			}
+			else
+			{
+				fids.push_back(FaceIndex(idxBuf, 4));
+			}
 		}
 		else
 		{

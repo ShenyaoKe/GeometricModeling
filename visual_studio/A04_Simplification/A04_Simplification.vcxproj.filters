@@ -72,19 +72,19 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\hds_face.cpp">
-      <Filter>Header Files\HDS</Filter>
+      <Filter>Source Files\HDS</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\hds_halfedge.cpp">
-      <Filter>Header Files\HDS</Filter>
+      <Filter>Source Files\HDS</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\hds_mesh.cpp">
-      <Filter>Header Files\HDS</Filter>
+      <Filter>Source Files\HDS</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\hds_vertex.cpp">
-      <Filter>Header Files\HDS</Filter>
+      <Filter>Source Files\HDS</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\MeshLoader.cpp">
-      <Filter>Header Files\HDS</Filter>
+      <Filter>Source Files\HDS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
