@@ -49,10 +49,19 @@ void Simplification::simplify(const mesh_t* src)
 	clock_t subdiv_start, start_time, end_time;//Timer
 	subdiv_start = start_time = clock();
 #endif
+	unordered_map<int, vector<vert_t*>*> neighborVertMap;
+	unordered_set<he_t*> unsafeEdges;
+	unordered_set<he_t*> dirtyEdges;
+	unordered_set<he_t*> invalidEdges;
+	unordered_map<int, QEF*> vertQEFs;
+	priority_queue<QEF*> qefPrQueue;
 
-
-
-
+	// For all vert, find neighbors
+	// If neighbor < 4, mark as unsafe edges
+	// Else calculate QEF
+	
+	
+	// For all edges not in unsafe edges, compute combined QEF
 
 
 

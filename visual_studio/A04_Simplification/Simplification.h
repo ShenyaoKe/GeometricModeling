@@ -10,6 +10,34 @@ typedef HDS_Vertex vert_t;
 typedef HDS_HalfEdge he_t;
 typedef HDS_Mesh mesh_t;
 
+struct QEF
+{
+	int num;		//n
+	QVector3D vSum;	// sum(vi)
+	double vMulSum;	// sum(viT * vi)
+	double err;
+	union src
+	{
+		vert_t* vert;
+		he_t* he;
+	};
+
+	QEF(int n, const QVector3D &vs, double vms)
+		: num(n), vSum(vs), vMulSum(vms), err(0){}
+	double calError()
+	{
+		return;
+	}
+	bool operator < (const QEF &cmp)
+	{
+		return error < cmp.error;
+	}
+	QEF operator + (const QEF &other)
+	{
+		return QEF(count + othercount, vSum + othervSum, vMulSum + othervMulSum);
+	}
+};
+
 class Simplification
 {
 public:
