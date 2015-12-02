@@ -115,7 +115,7 @@ private: // OpenGL variables
 	int offset = 0;
 	bool showPiece = false;
 	bool drawPoint = false;
-	bool drawWireFrame = false;
+	bool drawWireFrame = true;
 	vector<GLuint> vao_handles;
 	GLuint subd_vao;
 

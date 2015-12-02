@@ -111,7 +111,7 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	}
 
 	// For all edges not in unsafe edges, compute combined QEF
-	unordered_set<he_t*> visitedHE;
+	vector<bool> visitedHE(ret->heSet.size(), false);
 	for (auto he : ret->heSet)
 	{
 		auto hef = he->flip;
@@ -123,10 +123,12 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 			continue;
 		}
 		// Unvisited edges
-		if (visitedHE.find(he) == visitedHE.end() && visitedHE.find(hef) == visitedHE.end())
+		if (!visitedHE[he->index] && !visitedHE[hef->index])
 		{
-			visitedHE.insert(he);
-			visitedHE.insert(hef);
+			visitedHE[he->index] = true;
+			visitedHE[hef->index] = true;
+			//visitedHE.insert(he);
+			//visitedHE.insert(hef);
 
 			auto vQEF0 = vertQEFs.at(he->v->index);
 			auto vQEF1 = vertQEFs.at(hef->v->index);
@@ -146,7 +148,7 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	int targPolyCount = polyCount * percent;
 	while (!qefPrQueue.empty())
 	{
-		cout << "QEF:\t" << qefPrQueue.top()->err << endl;
+		//cout << "QEF:\t" << qefPrQueue.top()->err << endl;
 		auto qef = qefPrQueue.top();
 		auto curHE = qef->he;
 
@@ -159,9 +161,14 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 			// record invalid edges and dirty edges
 			invalidVert.push_back(curHE->flip->v);
 			ret->collapse(curHE, qef->minErrPos,
-				&invalidEdges, &dirtyEdges, &invalidFaces);
+				&dirtyEdges, &invalidEdges, &invalidFaces);
 			polyCount -= 2;
 			//ret->validate();
+		}
+		else
+		{
+			qefPrQueue.pop();
+
 		}
 		if (polyCount <= targPolyCount)
 		{
@@ -176,13 +183,13 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 		delete vert;
 		vert = nullptr;
 	}
-	/*for (auto he : invalidEdges)
+	for (auto he : invalidEdges)
 	{
 		ret->heSet.erase(he);
 		ret->heMap.erase(he->index);
 		delete he;
 		he = nullptr;
-	}*/
+	}
 	for (auto he : ret->heSet)
 	{
 		ret->validateEdge(he);
