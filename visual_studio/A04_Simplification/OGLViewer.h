@@ -33,7 +33,7 @@ static int model_vbo_size;// Triangle face numbers
 
 static HDS_Mesh* hds_box;
 static Mesh *box_mesh;// Display object
-static Subdivision* subd_mesh;
+static Simplification* simp_mesh;
 static vector<GLfloat> box_verts;
 static vector<GLushort> box_idxs;
 //static GLfloat* box_uvs;// Texture coordinates vbo
@@ -81,7 +81,7 @@ public:
 	void initParas();
 	void loadOBJ();
 	void saveOBJ();
-	void smoothMesh();
+	void simplifyMesh();
 signals:
 	void levelChanged(int level);
 protected:
@@ -111,7 +111,7 @@ private:
 	int m_selectMode;
 private: // OpenGL variables
 	int display_mode = 0;
-	int subd_lv;
+	int simp_lv;//simplification level
 	int offset = 0;
 	bool showPiece = false;
 	bool drawPoint = false;

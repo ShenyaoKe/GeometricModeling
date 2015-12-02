@@ -126,7 +126,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		heSet.insert(hef);
 		heMap.insert(make_pair(hef->index, hef));
 	}
-	reIndexing();
+	//reIndexing();
 #ifdef _DEBUG
 	end_time = clock();
 	cout << "Building HDS_Mesh " << filename << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
@@ -272,6 +272,11 @@ void HDS_Mesh::reIndexing()
 		he->index = HDS_HalfEdge::assignIndex();
 		heMap.insert(make_pair(he->index, he));
 	}
+	reIndexFace();
+}
+
+void HDS_Mesh::reIndexFace()
+{
 	faceMap.clear();
 	HDS_Vertex::resetIndex();
 	for (auto face : faceSet)
@@ -356,10 +361,31 @@ void HDS_Mesh::releaseMesh()
 	suvSet.clear(); suvMap.clear();
 }
 
-void HDS_Mesh::collapse(HDS_HalfEdge* he, const QVector3D &newPos)
+void HDS_Mesh::collapse(HDS_HalfEdge* he, const QVector3D &newPos,
+	unordered_set<HDS_HalfEdge*> *touchingEdges,
+	unordered_set<HDS_HalfEdge*> *invalidEdges,
+	unordered_set<HDS_Face*> *invalidFaces)
 {
+	unordered_set<HDS_HalfEdge*> touchings, invalids;
+
 	// Triangular mesh only
 	auto hef = he->flip;
+
+	// Record invalid edges, which will be removed
+	if (invalidEdges != nullptr)
+	{
+		invalidEdges->insert(he);
+		invalidEdges->insert(he->next);
+		invalidEdges->insert(he->prev);
+		invalidEdges->insert(hef);
+		invalidEdges->insert(hef->next);
+		invalidEdges->insert(hef->prev);
+	}
+	if (invalidFaces != nullptr)
+	{
+		invalidFaces->insert(he->f);
+		invalidFaces->insert(hef->f);
+	}
 
 	// Move vertex to new position
 	he->v->pos = newPos;
@@ -370,7 +396,20 @@ void HDS_Mesh::collapse(HDS_HalfEdge* he, const QVector3D &newPos)
 	{
 		curHE->v = he->v;
 		curHE = curHE->next->flip;
-	} while (curHE != he);
+		touchings.insert(curHE);
+	} while (curHE != he->prev);
+
+	// Find touching edges on the other side
+	if (touchingEdges != nullptr)
+	{
+		touchingEdges->insert(touchings.begin(), touchings.end());
+		curHE = he->next->flip;
+		do 
+		{
+			touchingEdges->insert(curHE);
+			curHE = curHE->next->flip;
+		} while (curHE != hef->prev);
+	}
 
 	// Assign flip edge
 	HDS_HalfEdge::connectEdges(he->next->flip, he->prev->flip);

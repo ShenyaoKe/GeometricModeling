@@ -34,13 +34,17 @@ public:
 	HDS_Mesh operator=(const HDS_Mesh& rhs);
 
 	void reIndexing();
+	void reIndexFace();
 
 	void validate() const;
 	//void printInfo(const string &msg = "");
 	//void printMesh(const string &msg = "");
 	void releaseMesh();
 
-	void collapse(HDS_HalfEdge* he, const QVector3D &newPos);
+	void collapse(HDS_HalfEdge* he, const QVector3D &newPos,
+		unordered_set<HDS_HalfEdge*> *touchingEdges = nullptr,
+		unordered_set<HDS_HalfEdge*> *invalidEdges = nullptr,
+		unordered_set<HDS_Face*> *invalidFaces = nullptr);
 	void extrude(HDS_Face* face);
 
 	void exportVBO(int &size,
@@ -57,6 +61,7 @@ private:
 	bool validateEdge(he_t *e) const;
 private:
 	friend class Subdivision;
+	friend class Simplification;
 private:
 	unordered_set<he_t*> heSet;
 	unordered_set<face_t*> faceSet;

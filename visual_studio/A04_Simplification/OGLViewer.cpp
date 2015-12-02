@@ -2,7 +2,7 @@
 
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
-	, subd_lv(0)
+	, simp_lv(1)
 	, m_selectMode(OBJECT_SELECT)
 {
 	// Set surface format for current widget
@@ -17,13 +17,13 @@ OGLViewer::OGLViewer(QWidget *parent)
 	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
 #ifdef _DEBUG
-	hds_box = new HDS_Mesh("../../scene/obj/cube_large.obj");
+	hds_box = new HDS_Mesh("../../scene/obj/icosahedron.obj");
 #else
 	hds_box = new HDS_Mesh("quad_cube.obj");
 #endif
 	//hds_box->reIndexing();
 	//hds_box->validate();
-	//subd_mesh = new Subdivision(0, hds_box);
+	simp_mesh = new Simplification(simp_lv, hds_box);
 
 	resetCamera();
 }
@@ -69,8 +69,8 @@ void OGLViewer::initializeGL()
 	// Export vbo for shaders
 	//box_mesh->exportVBO(box_vbo_size, box_verts, box_uvs, box_norms);
 	//box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	//subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
+	/*hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);*/
+	simp_mesh->exportIndexedVBO(simp_lv, &box_verts, nullptr, nullptr, &box_idxs);
 	//model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
 
 	//subd_vao = bindBox();
@@ -120,9 +120,9 @@ void OGLViewer::saveOBJ()
 	}*/
 }
 
-void OGLViewer::smoothMesh()
+void OGLViewer::simplifyMesh()
 {
-	if (subd_lv >= 4)
+	/*if (simp_lv >= 4)
 	{
 		int ret = QMessageBox::warning(this, tr("Warning"),
 			tr("Current mesh is smoothed more than level 4!\n"
@@ -132,12 +132,12 @@ void OGLViewer::smoothMesh()
 		{
 			return;
 		}
-	}
+	}*/
 	/*subd_mesh->subdivide();
 	subd_lv = subd_mesh->getLevel();
 	subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);*/
 
-	emit levelChanged(subd_lv);
+	emit levelChanged(simp_lv);
 	update();
 }
 
@@ -356,17 +356,17 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	// Subdiv
 	else if (e->key() == Qt::Key_Plus)
 	{
-		/*subd_lv = min(++subd_lv, (int)subd_mesh->getLevel());
-		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);*/
+		simp_lv = min(++simp_lv, (int)simp_mesh->getLevel());
+		simp_mesh->exportIndexedVBO(simp_lv, &box_verts, nullptr, nullptr, &box_idxs);
 
-		emit levelChanged(subd_lv);
+		emit levelChanged(simp_lv);
 	}
 	else if (e->key() == Qt::Key_Minus)
 	{
-		subd_lv = max(--subd_lv, 0);
-		/*subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);*/
+		simp_lv = max(--simp_lv, 0);
+		simp_mesh->exportIndexedVBO(simp_lv, &box_verts, nullptr, nullptr, &box_idxs);
 
-		emit levelChanged(subd_lv);
+		emit levelChanged(simp_lv);
 	}
 	else if (e->key() == Qt::Key_Left)
 	{
@@ -431,7 +431,7 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	int dx = e->x() - m_lastMousePos[0];
 	int dy = e->y() - m_lastMousePos[1];
 
-	printf("dx: %d, dy: %d\n", dx, dy);
+	//printf("dx: %d, dy: %d\n", dx, dy);
 
 	if ((e->buttons() == Qt::LeftButton) && (e->modifiers() == Qt::AltModifier))
 	{

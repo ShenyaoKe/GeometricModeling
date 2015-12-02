@@ -6,8 +6,8 @@ Simplification::Simplification(uint lv, const mesh_t* src)
 	const mesh_t* curMesh = origin_mesh;
 	for (int i = 0; i < lv; i++)
 	{
-		mesh_t* simp_ret;// = simplify(curMesh);
-		cout << "Subdivided at level " << i + 1 << "\n\t";
+		mesh_t* simp_ret = simplify(curMesh);
+		cout << "Simplification at level " << i + 1 << "\n\t";
 		simp_mesh.push_back(simp_ret);
 		curMesh = simp_ret;
 	}
@@ -30,7 +30,7 @@ void Simplification::exportIndexedVBO(int lv, vector<float>* vtx_array, vector<f
 	}
 }
 
-void Simplification::simplify(const mesh_t* src)
+mesh_t* Simplification::simplify(const mesh_t* src)
 {
 	// Initialize simplification by getting the latest mesh
 	//const mesh_t* src;
@@ -45,29 +45,141 @@ void Simplification::simplify(const mesh_t* src)
 
 	mesh_t* ret = new mesh_t(*src);
 
+	ret->validate();
 #ifdef _DEBUG
+	cout << "Current face number: " << ret->faceSet.size() << endl;
 	clock_t subdiv_start, start_time, end_time;//Timer
 	subdiv_start = start_time = clock();
 #endif
-	unordered_map<int, vector<vert_t*>*> neighborVertMap;
+	//unordered_map<int, vector<vert_t*>*> neighborVertMap;
 	unordered_set<he_t*> unsafeEdges;
 	unordered_set<he_t*> dirtyEdges;
 	unordered_set<he_t*> invalidEdges;
-	unordered_map<int, QEF*> vertQEFs;
-	priority_queue<QEF*> qefPrQueue;
+	unordered_set<face_t*> invalidFaces;
+	//unordered_map<int, QEF*> vertQEFs;
+	//QEF* vertQEFs = new QEF[src->vertSet.size()];
+	vector<QEF*> vertQEFs(ret->vertSet.size(), nullptr);
+	//unordered_map<int, QEF*> heQEFs;
+	vector<QEF*> heQEFs(ret->heSet.size(), nullptr);
+	priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue;
 
-	// For all vert, find neighbors
-	// If neighbor < 4, mark as unsafe edges
-	// Else calculate QEF
-	
-	
+	for (auto vert : ret->vertSet)
+	{
+		// For all vert, find neighbors
+		auto neighborVerts = vert->neighbors();
+		// If neighbor < 4, mark as unsafe edges
+		if (neighborVerts.size() < 4)
+		{
+			auto curHE = vert->he;
+			do 
+			{
+				unsafeEdges.insert(curHE->next);
+				curHE = curHE->flip->next;
+			} while (curHE != vert->he);
+		}
+		// Calculate QEF
+		QEF* qef = new QEF;
+		qef->num = neighborVerts.size();
+		for (auto nv : neighborVerts)
+		{
+			qef->vSum += nv->pos;
+			qef->vMulSum += nv->pos.lengthSquared();
+		}
+		qef->vert = vert;
+		vertQEFs[vert->index] = qef;
+		//vertQEFs.insert(make_pair(vert->index, qef));
+	}
+
 	// For all edges not in unsafe edges, compute combined QEF
+	unordered_set<he_t*> visitedHE;
+	for (auto he : ret->heSet)
+	{
+		auto hef = he->flip;
 
+		// Skip unsafe edges
+		if (unsafeEdges.find(he) != unsafeEdges.end() ||
+			unsafeEdges.find(hef) != unsafeEdges.end())
+		{
+			continue;
+		}
+		// Unvisited edges
+		if (visitedHE.find(he) == visitedHE.end() && visitedHE.find(hef) == visitedHE.end())
+		{
+			visitedHE.insert(he);
+			visitedHE.insert(hef);
 
+			auto vQEF0 = vertQEFs.at(he->v->index);
+			auto vQEF1 = vertQEFs.at(hef->v->index);
+			QEF* heQEF = new QEF;
+			*heQEF = *vQEF0 + *vQEF1;
+			heQEF->he = he;
+			//heQEFs.insert(make_pair(he->index, heQEF));
+			heQEFs[he->index] = heQEF;
 
+			heQEF->calMinError();
+			qefPrQueue.push(heQEF);
+		}
+	}
+
+	// Collapse edges
+	int polyCount = ret->faceSet.size();
+	int targPolyCount = polyCount * percent;
+	while (!qefPrQueue.empty())
+	{
+		cout << "QEF:\t" << qefPrQueue.top()->err << endl;
+		auto qef = qefPrQueue.top();
+		auto curHE = qef->he;
+
+		if (/*unsafeEdges.find(curHE) == unsafeEdges.end()
+			&& */invalidEdges.find(curHE) == invalidEdges.end()
+			&& dirtyEdges.find(curHE) == dirtyEdges.end())
+		{
+			// collapse edge
+			// record invalid edges and dirty edges
+			ret->collapse(curHE, qef->minErrPos,
+				&invalidEdges, &dirtyEdges, &invalidFaces);
+			polyCount -= 2;
+		}
+		if (polyCount <= targPolyCount)
+		{
+			break;
+		}
+		qefPrQueue.pop();
+	}
+	/*for (auto he : invalidEdges)
+	{
+		ret->heSet.erase(he);
+		ret->heMap.erase(he->index);
+		delete he;
+	}*/
+	for (auto face : invalidFaces)
+	{
+		ret->faceSet.erase(face);
+		ret->faceMap.erase(face->index);
+		delete face;
+	}
+	ret->reIndexFace();
+	/*for (auto vQEF : vertQEFs)
+	{
+		delete vQEF;
+	}
+	vertQEFs.clear();
+	for (auto heQEF : heQEFs)
+	{
+		delete heQEF;
+	}*/
+	ret->validate();
 #ifdef _DEBUG
+	cout << "Simplified face number: " << ret->faceSet.size() << endl;
 	end_time = clock();
-	cout << "\t\tGenerate Face Center:\t" << end_time - start_time << "ms\n";
+	cout << "\t\tSimplification Time:\t" << end_time - start_time << "ms\n";
 	start_time = clock();
 #endif
+
+	return ret;
+}
+
+int Simplification::getLevel() const
+{
+	return simp_mesh.size();
 }
