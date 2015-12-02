@@ -17,7 +17,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
 #ifdef _DEBUG
-	hds_box = new HDS_Mesh("../../scene/obj/icosahedron.obj");
+	hds_box = new HDS_Mesh("../../scene/obj/cone.obj");
 #else
 	hds_box = new HDS_Mesh("quad_cube.obj");
 #endif
@@ -71,6 +71,7 @@ void OGLViewer::initializeGL()
 	//box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
 	/*hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);*/
 	simp_mesh->exportIndexedVBO(simp_lv, &box_verts, nullptr, nullptr, &box_idxs);
+	//simp_mesh->exportVBO(simp_lv, &box_verts);
 	//model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
 
 	//subd_vao = bindBox();
@@ -253,8 +254,8 @@ void OGLViewer::paintGL()
 	//glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, model_mat);
 	glUniformMatrix4fv((*box_shader)("view_matrix"), 1, GL_FALSE, view_mat);
 	glUniformMatrix4fv((*box_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-	//glDrawArrays(GL_POINTS, 0, box_vbo_size * 3);
-
+	
+	//glDrawArrays(GL_TRIANGLES, 0, box_verts.size() / 3);
 	if (showPiece)
 	{
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);

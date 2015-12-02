@@ -17,7 +17,11 @@ Simplification::~Simplification()
 {
 }
 
-void Simplification::exportIndexedVBO(int lv, vector<float>* vtx_array, vector<float>* uv_array, vector<float>* norm_array, vector<ushort>* idx_array)
+void Simplification::exportIndexedVBO(int lv,
+	vector<float>* vtx_array,
+	vector<float>* uv_array,
+	vector<float>* norm_array,
+	vector<ushort>* idx_array)
 {
 	if (lv < 1 || simp_mesh.size() == 0)// 0 or negative value
 	{
@@ -27,6 +31,22 @@ void Simplification::exportIndexedVBO(int lv, vector<float>* vtx_array, vector<f
 	{
 		lv = min(lv - 1, (int)simp_mesh.size() - 1);
 		simp_mesh[lv]->exportIndexedVBO(vtx_array, uv_array, norm_array, idx_array);
+	}
+}
+
+void Simplification::exportVBO(int lv,
+	vector<float>* vtx_array,
+	vector<float>* uv_array,
+	vector<float>* norm_array)
+{
+	if (lv < 1 || simp_mesh.size() == 0)// 0 or negative value
+	{
+		origin_mesh->exportVBO(vtx_array, uv_array, norm_array);
+	}
+	else // 1 or bigger
+	{
+		lv = min(lv - 1, (int)simp_mesh.size() - 1);
+		simp_mesh[lv]->exportVBO(vtx_array, uv_array, norm_array);
 	}
 }
 
@@ -45,7 +65,6 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 
 	mesh_t* ret = new mesh_t(*src);
 
-	ret->validate();
 #ifdef _DEBUG
 	cout << "Current face number: " << ret->faceSet.size() << endl;
 	clock_t subdiv_start, start_time, end_time;//Timer
@@ -56,6 +75,7 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	unordered_set<he_t*> dirtyEdges;
 	unordered_set<he_t*> invalidEdges;
 	unordered_set<face_t*> invalidFaces;
+	vector<vert_t*> invalidVert;
 	//unordered_map<int, QEF*> vertQEFs;
 	//QEF* vertQEFs = new QEF[src->vertSet.size()];
 	vector<QEF*> vertQEFs(ret->vertSet.size(), nullptr);
@@ -132,13 +152,16 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 
 		if (/*unsafeEdges.find(curHE) == unsafeEdges.end()
 			&& */invalidEdges.find(curHE) == invalidEdges.end()
-			&& dirtyEdges.find(curHE) == dirtyEdges.end())
+			&& dirtyEdges.find(curHE) == dirtyEdges.end()
+			&& dirtyEdges.find(curHE->flip) == dirtyEdges.end())
 		{
 			// collapse edge
 			// record invalid edges and dirty edges
+			invalidVert.push_back(curHE->flip->v);
 			ret->collapse(curHE, qef->minErrPos,
 				&invalidEdges, &dirtyEdges, &invalidFaces);
 			polyCount -= 2;
+			//ret->validate();
 		}
 		if (polyCount <= targPolyCount)
 		{
@@ -146,20 +169,33 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 		}
 		qefPrQueue.pop();
 	}
+	for (auto vert : invalidVert)
+	{
+		ret->vertSet.erase(vert);
+		ret->vertMap.erase(vert->index);
+		delete vert;
+		vert = nullptr;
+	}
 	/*for (auto he : invalidEdges)
 	{
 		ret->heSet.erase(he);
 		ret->heMap.erase(he->index);
 		delete he;
+		he = nullptr;
 	}*/
+	for (auto he : ret->heSet)
+	{
+		ret->validateEdge(he);
+	}
 	for (auto face : invalidFaces)
 	{
 		ret->faceSet.erase(face);
 		ret->faceMap.erase(face->index);
 		delete face;
 	}
+	ret->reIndexVert();
 	ret->reIndexFace();
-	/*for (auto vQEF : vertQEFs)
+	for (auto vQEF : vertQEFs)
 	{
 		delete vQEF;
 	}
@@ -167,8 +203,8 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	for (auto heQEF : heQEFs)
 	{
 		delete heQEF;
-	}*/
-	ret->validate();
+	}
+	//ret->validate();
 #ifdef _DEBUG
 	cout << "Simplified face number: " << ret->faceSet.size() << endl;
 	end_time = clock();
@@ -183,3 +219,4 @@ int Simplification::getLevel() const
 {
 	return simp_mesh.size();
 }
+

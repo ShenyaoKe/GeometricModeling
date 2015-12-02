@@ -258,6 +258,13 @@ bool HDS_Mesh::validateVertex(vert_t *v) const
 
 void HDS_Mesh::reIndexing()
 {
+	reIndexVert();
+	reIndexHE();
+	reIndexFace();
+}
+
+void HDS_Mesh::reIndexVert()
+{
 	vertMap.clear();
 	HDS_Vertex::resetIndex();
 	for (auto vert : vertSet)
@@ -265,6 +272,10 @@ void HDS_Mesh::reIndexing()
 		vert->index = HDS_Vertex::assignIndex();
 		vertMap.insert(make_pair(vert->index, vert));
 	}
+}
+
+void HDS_Mesh::reIndexHE()
+{
 	heMap.clear();
 	HDS_HalfEdge::resetIndex();
 	for (auto he : heSet)
@@ -272,7 +283,6 @@ void HDS_Mesh::reIndexing()
 		he->index = HDS_HalfEdge::assignIndex();
 		heMap.insert(make_pair(he->index, he));
 	}
-	reIndexFace();
 }
 
 void HDS_Mesh::reIndexFace()
@@ -303,6 +313,7 @@ void HDS_Mesh::validate() const
 
 	for (auto e : heSet) {
 		if (!validateEdge(e)) {
+			//validateEdge(e);
 			cout << "half edge #" << e->index << " is invalid." << endl;
 		}
 	}
@@ -392,9 +403,13 @@ void HDS_Mesh::collapse(HDS_HalfEdge* he, const QVector3D &newPos,
 
 	// Remove opposite vertex and re-assign it to he->v
 	auto curHE = hef->next->flip;
+	auto curV = he->v;
+	curV->he = curHE->next;
+	he->next->v->he = he->next->flip;
+	hef->next->v->he = curHE;
 	do 
 	{
-		curHE->v = he->v;
+		curHE->v = curV;
 		curHE = curHE->next->flip;
 		touchings.insert(curHE);
 	} while (curHE != he->prev);
@@ -561,6 +576,35 @@ void HDS_Mesh::exportVBO(int &size,
 			*uids++ = this->index + i;
 			*uids++ = this->index + i;
 		}*/
+	}
+}
+
+void HDS_Mesh::exportVBO(
+	vector<float>* vtx_array,
+	vector<float>* uv_array,
+	vector<float>* norm_array) const
+{
+	bool has_vert(false), has_texcoord(false), has_normal(false);
+
+	if (vtx_array != nullptr)
+	{
+		vtx_array->clear();
+		vtx_array->reserve(vertSet.size() * 3);
+		has_vert = true;
+	}
+
+	for (auto face : faceSet)
+	{
+		he_t* he = face->he;
+		he_t* curHE = he;
+		do
+		{
+			auto& point = curHE->v->pos;
+			vtx_array->push_back(point.x());
+			vtx_array->push_back(point.y());
+			vtx_array->push_back(point.z());
+			curHE = curHE->next;
+		} while (curHE != he);
 	}
 }
 

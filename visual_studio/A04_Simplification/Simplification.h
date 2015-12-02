@@ -62,11 +62,14 @@ public:
 	mesh_t* simplify(const mesh_t* src = nullptr);
 
 	int getLevel() const;
+	void exportVBO(int lv = 0,
+		vector<float>* vtx_array = nullptr,
+		vector<float>* uv_array = nullptr,
+		vector<float>* norm_array = nullptr);
 	void exportIndexedVBO(int lv = 0,
 		vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
 		vector<float>* norm_array = nullptr,
-	
 		vector<ushort>* idx_array = nullptr);
 private:
 private:

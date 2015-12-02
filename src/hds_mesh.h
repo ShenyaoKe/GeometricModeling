@@ -34,6 +34,8 @@ public:
 	HDS_Mesh operator=(const HDS_Mesh& rhs);
 
 	void reIndexing();
+	void reIndexVert();
+	void reIndexHE();
 	void reIndexFace();
 
 	void validate() const;
@@ -50,6 +52,9 @@ public:
 	void exportVBO(int &size,
 		vbo_t** vtx_array = nullptr, vbo_t** uv_array = nullptr,
 		vbo_t** norm_array = nullptr, int** idx_array = nullptr) const;
+	void exportVBO(vector<float>* vtx_array = nullptr,
+		vector<float>* uv_array = nullptr,
+		vector<float>* norm_array = nullptr) const;
 	void exportIndexedVBO(vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
 		vector<float>* norm_array = nullptr,
