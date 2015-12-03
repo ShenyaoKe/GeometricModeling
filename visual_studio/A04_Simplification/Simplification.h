@@ -26,6 +26,7 @@ struct QEF
 	QEF() : num(0), vSum(0, 0, 0), vMulSum(0), err(0) {}
 	QEF(int n, const QVector3D &vs, double vms)
 		: num(n), vSum(vs), vMulSum(vms), err(0){}
+	~QEF(){}
 	double calMinError()
 	{
 		minErrPos = vSum / static_cast<float>(num);
@@ -59,20 +60,23 @@ public:
 	Simplification(uint lv, const mesh_t* src);
 	~Simplification();
 
-	mesh_t* simplify(const mesh_t* src = nullptr);
-
+	void simplify();
 	int getLevel() const;
+	void saveAsOBJ(uint lv, const char* filename) const;
+
 	void exportVBO(int lv = 0,
 		vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
-		vector<float>* norm_array = nullptr);
+		vector<float>* norm_array = nullptr) const;
 	void exportIndexedVBO(int lv = 0,
 		vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
 		vector<float>* norm_array = nullptr,
-		vector<ushort>* idx_array = nullptr);
+		vector<uint>* idx_array = nullptr) const;
 private:
+	mesh_t* simplify(const mesh_t* src);
 private:
+	friend class OGLViewer;
 	const mesh_t* origin_mesh;
 	vector<mesh_t*> simp_mesh;
 

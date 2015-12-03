@@ -29,7 +29,7 @@
      <x>0</x>
      <y>0</y>
      <width>691</width>
-     <height>21</height>
+     <height>38</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -38,6 +38,7 @@
     </property>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -81,6 +82,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionOpen"/>
+   <addaction name="actionSave"/>
   </widget>
   <widget class="QDockWidget" name="attr_editor">
    <property name="windowTitle">
@@ -123,7 +126,7 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QPushButton" name="simplify_button">
+        <widget class="QPushButton" name="simplify">
          <property name="text">
           <string>Simplify</string>
          </property>
@@ -177,6 +180,14 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>

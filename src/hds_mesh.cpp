@@ -4,6 +4,9 @@ using namespace std;
 
 HDS_Mesh::HDS_Mesh(const string &filename)
 {
+	HDS_Vertex::resetIndex();
+	HDS_HalfEdge::resetIndex();
+	HDS_Face::resetIndex();
 #ifdef _DEBUG
 	clock_t start_time, end_time;//Timer
 	start_time = clock();
@@ -636,7 +639,7 @@ void HDS_Mesh::exportVBO(
 
 void HDS_Mesh::exportIndexedVBO(
 	vector<float>* vtx_array, vector<float>* uv_array,
-	vector<float>* norm_array, vector<ushort>* idx_array) const
+	vector<float>* norm_array, vector<uint>* idx_array) const
 {
 	bool has_vert(false), has_texcoord(false), has_normal(false), has_uid(false);
 
@@ -692,7 +695,7 @@ void HDS_Mesh::exportIndexedVBO(
 		he_t* curHE = he;
 		do
 		{
-			idx_array->push_back(static_cast<ushort>(curHE->v->index));
+			idx_array->push_back(static_cast<uint>(curHE->v->index));
 			curHE = curHE->next;
 		} while (curHE != he);
 	}

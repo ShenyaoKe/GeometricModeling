@@ -15,13 +15,18 @@ Simplification::Simplification(uint lv, const mesh_t* src)
 
 Simplification::~Simplification()
 {
+	for (auto mesh : simp_mesh)
+	{
+		mesh->releaseMesh();
+		delete mesh;
+	}
 }
 
 void Simplification::exportIndexedVBO(int lv,
 	vector<float>* vtx_array,
 	vector<float>* uv_array,
 	vector<float>* norm_array,
-	vector<ushort>* idx_array)
+	vector<uint>* idx_array) const
 {
 	if (lv < 1 || simp_mesh.size() == 0)// 0 or negative value
 	{
@@ -37,7 +42,7 @@ void Simplification::exportIndexedVBO(int lv,
 void Simplification::exportVBO(int lv,
 	vector<float>* vtx_array,
 	vector<float>* uv_array,
-	vector<float>* norm_array)
+	vector<float>* norm_array) const
 {
 	if (lv < 1 || simp_mesh.size() == 0)// 0 or negative value
 	{
@@ -52,17 +57,6 @@ void Simplification::exportVBO(int lv,
 
 mesh_t* Simplification::simplify(const mesh_t* src)
 {
-	// Initialize simplification by getting the latest mesh
-	//const mesh_t* src;
-	if (src == nullptr || simp_mesh.size() == 0)
-	{
-		src = origin_mesh;
-	}
-	else
-	{
-		src = simp_mesh.back();
-	}
-
 	mesh_t* ret = new mesh_t(*src);
 
 #ifdef _DEBUG
@@ -76,38 +70,46 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	unordered_set<he_t*> invalidEdges;
 	unordered_set<face_t*> invalidFaces;
 	vector<vert_t*> invalidVert;
-	//unordered_map<int, QEF*> vertQEFs;
-	//QEF* vertQEFs = new QEF[src->vertSet.size()];
-	vector<QEF*> vertQEFs(ret->vertSet.size(), nullptr);
-	//unordered_map<int, QEF*> heQEFs;
-	vector<QEF*> heQEFs(ret->heSet.size(), nullptr);
-	//priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue;
+	vector<QEF*> vertQEF_vec(ret->vertSet.size(), nullptr);
+	vector<QEF*> heQEF_vec(ret->heSet.size(), nullptr);
 
-	for (auto vert : ret->vertSet)
+	auto vertQEF_Func = [&](vert_t* vert)
 	{
-		// For all vert, find neighbors
 		auto neighborVerts = vert->neighbors();
 		// If neighbor < 4, mark as unsafe edges
 		if (neighborVerts.size() < 4)
 		{
 			auto curHE = vert->he;
-			do 
+			do
 			{
 				unsafeEdges.insert(curHE->next);
 				curHE = curHE->flip->next;
 			} while (curHE != vert->he);
 		}
+		/*else
+		{
+			auto curHE = vert->he;
+			do
+			{
+				unsafeEdges.erase(curHE->next);
+				unsafeEdges.erase(curHE->next->flip);
+				curHE = curHE->flip->next;
+			} while (curHE != vert->he);
+		}*/
 		// Calculate QEF
-		QEF* qef = new QEF;
-		qef->num = neighborVerts.size();
+		QEF* curVQEF = new QEF;
+		curVQEF->num = neighborVerts.size();
 		for (auto nv : neighborVerts)
 		{
-			qef->vSum += nv->pos;
-			qef->vMulSum += nv->pos.lengthSquared();
+			curVQEF->vSum += nv->pos;
+			curVQEF->vMulSum += nv->pos.lengthSquared();
 		}
-		qef->vert = vert;
-		vertQEFs[vert->index] = qef;
-		//vertQEFs.insert(make_pair(vert->index, qef));
+		curVQEF->vert = vert;
+		vertQEF_vec[vert->index] = curVQEF;
+	};
+	for (auto vert : ret->vertSet)
+	{
+		vertQEF_Func(vert);
 	}
 #ifdef _DEBUG
 	end_time = clock();
@@ -116,8 +118,9 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 #endif
 	// For all edges not in unsafe edges, compute combined QEF
 	vector<bool> visitedHE(ret->heSet.size(), false);
-	vector<QEF*> heQEFVector;
-	for (auto he : ret->heSet)
+	vector<QEF*> heQEF_InitList;
+
+	auto heQEF_Func = [&](he_t* he)/*->QEF**/
 	{
 		auto hef = he->flip;
 
@@ -125,7 +128,7 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 		if (unsafeEdges.find(he) != unsafeEdges.end() ||
 			unsafeEdges.find(hef) != unsafeEdges.end())
 		{
-			continue;
+			return;
 		}
 		// Unvisited edges
 		if (!visitedHE[he->index] && !visitedHE[hef->index])
@@ -135,20 +138,29 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 			//visitedHE.insert(he);
 			//visitedHE.insert(hef);
 
-			auto vQEF0 = vertQEFs[he->v->index];
-			auto vQEF1 = vertQEFs[hef->v->index];
+			auto vQEF0 = vertQEF_vec[he->v->index];
+			auto vQEF1 = vertQEF_vec[hef->v->index];
 			QEF* heQEF = new QEF;
 			*heQEF = *vQEF0 + *vQEF1;
 			heQEF->he = he;
-			//heQEFs.insert(make_pair(he->index, heQEF));
-			heQEFs[he->index] = heQEF;
+			heQEF_vec[he->index] = heQEF;
 
 			heQEF->calMinError();
-			heQEFVector.push_back(heQEF);
-			/*qefPrQueue.push(heQEF);*/
+			heQEF_InitList.push_back(heQEF);
+			//return heQEF;
 		}
+	};
+	for (auto he : ret->heSet)
+	{
+		/*auto curQEF = */heQEF_Func(he);
+		/*if (curQEF != nullptr)
+		{
+			heQEF_InitList.push_back(curQEF);
+		}*/
 	}
-	priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue(heQEFVector.begin(), heQEFVector.end());
+	priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue(heQEF_InitList.begin(), heQEF_InitList.end());
+	std::fill(visitedHE.begin(), visitedHE.end(), false);
+	//unsafeEdges.clear();
 #ifdef _DEBUG
 	end_time = clock();
 	cout << "\t\tEdges QEF Time:\t" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s\n";
@@ -157,32 +169,54 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	// Collapse edges
 	int polyCount = ret->faceSet.size();
 	int targPolyCount = polyCount * percent;
+	cout << "Current Polycount: " << polyCount << endl;
+	cout << "Target: " << targPolyCount << endl;
 	while (!qefPrQueue.empty() && polyCount > targPolyCount)
 	{
 		//cout << "QEF:\t" << qefPrQueue.top()->err << endl;
 		auto qef = qefPrQueue.top();
 		auto curHE = qef->he;
 
-		if (/*unsafeEdges.find(curHE) == unsafeEdges.end()
-			&& */invalidEdges.find(curHE) == invalidEdges.end()
-			&& dirtyEdges.find(curHE) == dirtyEdges.end()
-			&& dirtyEdges.find(curHE->flip) == dirtyEdges.end())
+		if (invalidEdges.find(curHE) == invalidEdges.end())
 		{
-			// collapse edge
-			// record invalid edges and dirty edges
-			invalidVert.push_back(curHE->flip->v);
-			ret->collapse(curHE, qef->minErrPos,
-				&dirtyEdges, &invalidEdges, &invalidFaces);
-			polyCount -= 2;
+			if (dirtyEdges.find(curHE) == dirtyEdges.end()
+				&& dirtyEdges.find(curHE->flip) == dirtyEdges.end())
+			{
+				// collapse edge
+				// record invalid edges and dirty edges
+				invalidVert.push_back(curHE->flip->v);
+				ret->collapse(curHE, qef->minErrPos,
+					&dirtyEdges, &invalidEdges, &invalidFaces);
+				polyCount -= 2;
+			}
+			/*else// Dirty edge
+			{
+				qefPrQueue.pop();
+				/ *delete qef;
+				qef = nullptr;* /
+				vertQEF_Func(curHE->v);
+				vertQEF_Func(curHE->flip->v);
+				heQEF_Func(curHE);
+				qefPrQueue.push(heQEF_vec[curHE->index]);
+				continue;
+			}*/
+			
 		}
 		
 		qefPrQueue.pop();
 	}
+	cout << "Final Polycount: " << polyCount << endl;
 #ifdef _DEBUG
 	end_time = clock();
 	cout << "\t\tCollapsing Time:\t" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s\n";
 	start_time = clock();
 #endif
+	for (auto qef : heQEF_InitList)
+	{
+		delete qef;
+		qef = nullptr;
+	}
+	
 	for (auto vert : invalidVert)
 	{
 		ret->vertSet.erase(vert);
@@ -208,16 +242,20 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 		delete face;
 	}
 	ret->reIndexVert();
+	ret->reIndexHE();
 	ret->reIndexFace();
-	for (auto vQEF : vertQEFs)
+	for (auto vQEF : vertQEF_vec)
 	{
 		delete vQEF;
 	}
-	vertQEFs.clear();
-	for (auto heQEF : heQEFs)
+	vertQEF_vec.clear();
+	/*for (auto heQEF : heQEF_vec)
 	{
-		delete heQEF;
-	}
+		if (heQEF != nullptr)
+		{
+			delete heQEF;
+		}
+	}*/
 	//ret->validate();
 #ifdef _DEBUG
 	end_time = clock();
@@ -229,8 +267,57 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	return ret;
 }
 
+void Simplification::simplify()
+{
+	if (simp_mesh.size() == 0)
+	{
+		simp_mesh.push_back(simplify(origin_mesh));
+	} 
+	else
+	{
+		simp_mesh.push_back(simplify(simp_mesh.back()));
+	}
+}
+
 int Simplification::getLevel() const
 {
 	return simp_mesh.size();
+}
+
+void Simplification::saveAsOBJ(uint lv, const char* filename) const
+{
+	const mesh_t* curMesh = lv < 1 ? origin_mesh : simp_mesh[lv - 1];
+
+	FILE *OBJ_File;
+	errno_t err = fopen_s(&OBJ_File, filename, "w");
+	if (err)
+	{
+		printf("Can't write to file %s!\n", filename);
+		return;
+	}
+	fprintf(OBJ_File, "#Simplified Mesh Level %d\n", lv);
+
+	for (int i = 0; i < curMesh->vertMap.size(); i++)
+	{
+		auto curVert = curMesh->vertMap.at(i);
+		fprintf(OBJ_File, "v %f %f %f\n",
+			curVert->pos.x(), curVert->pos.y(), curVert->pos.z());
+	}
+	for (auto face : curMesh->faceSet)
+	{
+		vector<int> vid;
+		he_t* he = face->he;
+		he_t* curHE = he;
+		fprintf(OBJ_File, "f");
+		do
+		{
+			fprintf(OBJ_File, " %d/0/0", curHE->v->index + 1);
+			curHE = curHE->next;
+		} while (curHE != he);
+
+		fprintf(OBJ_File, "\n");
+	}
+
+	fclose(OBJ_File);
 }
 

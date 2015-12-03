@@ -11,10 +11,14 @@ MainWindow::MainWindow(QWidget *parent)
 	//setWindowTitle(tr("OpenGL Qt Template"));
 
 	m_oglviewer->setFocusPolicy(Qt::StrongFocus);
+	connect(ui.actionOpen, &QAction::triggered, m_oglviewer, &OGLViewer::loadOBJ);
+	
+	connect(ui.simplify, &QPushButton::clicked, m_oglviewer, &OGLViewer::simplifyMesh);
 
 	connect(ui.reductionratio_slider, &QSlider::valueChanged, [&]() {
 		ui.reductionratio_label->setText(
 			QString::number(ui.reductionratio_slider->value()).append("%")); });
+	connect(ui.reductionratio_slider, &QSlider::valueChanged, m_oglviewer, &OGLViewer::setReduction);
 }
 
 MainWindow::~MainWindow()

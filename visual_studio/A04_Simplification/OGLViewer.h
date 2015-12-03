@@ -35,7 +35,7 @@ static HDS_Mesh* hds_box;
 static Mesh *box_mesh;// Display object
 static Simplification* simp_mesh;
 static vector<GLfloat> box_verts;
-static vector<GLushort> box_idxs;
+static vector<GLuint> box_idxs;
 //static GLfloat* box_uvs;// Texture coordinates vbo
 //static GLfloat* box_norms;// Normal coordinates vbo
 
@@ -82,6 +82,7 @@ public:
 	void loadOBJ();
 	void saveOBJ();
 	void simplifyMesh();
+	void setReduction(int val = 50);
 signals:
 	void levelChanged(int level);
 protected:
@@ -95,7 +96,7 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
-	GLuint bindBox();
+	void bindBox();
 	GLuint bindMesh();
 	void saveFrameBuffer();
 public:
@@ -117,7 +118,9 @@ private: // OpenGL variables
 	bool drawPoint = false;
 	bool drawWireFrame = true;
 	vector<GLuint> vao_handles;
-	GLuint subd_vao;
+	GLuint simp_vao = 0;
+	GLuint simp_pts_vbo = 0;
+	GLuint elementbuffer = 0;
 
 	friend class MainWindow;
 };

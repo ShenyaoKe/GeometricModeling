@@ -58,7 +58,7 @@ public:
 	void exportIndexedVBO(vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
 		vector<float>* norm_array = nullptr,
-		vector<ushort>* idx_array = nullptr) const;
+		vector<uint>* idx_array = nullptr) const;
 
 private:
 	bool validateVertex(vert_t *v) const;
