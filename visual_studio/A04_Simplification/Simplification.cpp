@@ -67,8 +67,8 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 
 #ifdef _DEBUG
 	cout << "Current face number: " << ret->faceSet.size() << endl;
-	clock_t subdiv_start, start_time, end_time;//Timer
-	subdiv_start = start_time = clock();
+	clock_t simp_start, start_time, end_time;//Timer
+	simp_start = start_time = clock();
 #endif
 	//unordered_map<int, vector<vert_t*>*> neighborVertMap;
 	unordered_set<he_t*> unsafeEdges;
@@ -81,7 +81,7 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	vector<QEF*> vertQEFs(ret->vertSet.size(), nullptr);
 	//unordered_map<int, QEF*> heQEFs;
 	vector<QEF*> heQEFs(ret->heSet.size(), nullptr);
-	priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue;
+	//priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue;
 
 	for (auto vert : ret->vertSet)
 	{
@@ -109,9 +109,14 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 		vertQEFs[vert->index] = qef;
 		//vertQEFs.insert(make_pair(vert->index, qef));
 	}
-
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tVetices QEF Time:\t" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s\n";
+	start_time = clock();
+#endif
 	// For all edges not in unsafe edges, compute combined QEF
 	vector<bool> visitedHE(ret->heSet.size(), false);
+	vector<QEF*> heQEFVector;
 	for (auto he : ret->heSet)
 	{
 		auto hef = he->flip;
@@ -130,8 +135,8 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 			//visitedHE.insert(he);
 			//visitedHE.insert(hef);
 
-			auto vQEF0 = vertQEFs.at(he->v->index);
-			auto vQEF1 = vertQEFs.at(hef->v->index);
+			auto vQEF0 = vertQEFs[he->v->index];
+			auto vQEF1 = vertQEFs[hef->v->index];
 			QEF* heQEF = new QEF;
 			*heQEF = *vQEF0 + *vQEF1;
 			heQEF->he = he;
@@ -139,14 +144,20 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 			heQEFs[he->index] = heQEF;
 
 			heQEF->calMinError();
-			qefPrQueue.push(heQEF);
+			heQEFVector.push_back(heQEF);
+			/*qefPrQueue.push(heQEF);*/
 		}
 	}
-
+	priority_queue<QEF*, vector<QEF*>, QEF> qefPrQueue(heQEFVector.begin(), heQEFVector.end());
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tEdges QEF Time:\t" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s\n";
+	start_time = clock();
+#endif
 	// Collapse edges
 	int polyCount = ret->faceSet.size();
 	int targPolyCount = polyCount * percent;
-	while (!qefPrQueue.empty())
+	while (!qefPrQueue.empty() && polyCount > targPolyCount)
 	{
 		//cout << "QEF:\t" << qefPrQueue.top()->err << endl;
 		auto qef = qefPrQueue.top();
@@ -163,19 +174,15 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 			ret->collapse(curHE, qef->minErrPos,
 				&dirtyEdges, &invalidEdges, &invalidFaces);
 			polyCount -= 2;
-			//ret->validate();
 		}
-		else
-		{
-			qefPrQueue.pop();
-
-		}
-		if (polyCount <= targPolyCount)
-		{
-			break;
-		}
+		
 		qefPrQueue.pop();
 	}
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "\t\tCollapsing Time:\t" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s\n";
+	start_time = clock();
+#endif
 	for (auto vert : invalidVert)
 	{
 		ret->vertSet.erase(vert);
@@ -213,10 +220,10 @@ mesh_t* Simplification::simplify(const mesh_t* src)
 	}
 	//ret->validate();
 #ifdef _DEBUG
-	cout << "Simplified face number: " << ret->faceSet.size() << endl;
 	end_time = clock();
-	cout << "\t\tSimplification Time:\t" << end_time - start_time << "ms\n";
+	cout << "\t\tSimplification Time:\t" << end_time - simp_start << "ms\n";
 	start_time = clock();
+	cout << "Simplified face number: " << ret->faceSet.size() << endl;
 #endif
 
 	return ret;

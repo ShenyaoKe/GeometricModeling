@@ -17,7 +17,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
 #ifdef _DEBUG
-	hds_box = new HDS_Mesh("../../scene/obj/odd.obj");
+	hds_box = new HDS_Mesh("../../scene/obj/frog.obj");
 #else
 	hds_box = new HDS_Mesh("quad_cube.obj");
 #endif

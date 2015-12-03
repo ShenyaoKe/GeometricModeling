@@ -28,7 +28,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		vertSet.insert(v);
 		vertMap.insert(make_pair(i, v));
 	}
-	for (int i = 0; i < normals.size(); i++)
+	/*for (int i = 0; i < normals.size(); i++)
 	{
 		QVector3D* sn = new QVector3D(normals[i]);
 		snSet.insert(sn);
@@ -39,7 +39,7 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		QVector2D* suv = new QVector2D(uvs[i]);
 		suvSet.insert(suv);
 		suvMap.insert(make_pair(i, suv));
-	}
+	}*/
 	
 	// Generate HDS_Face
 	map<pair<int, int>, he_t*> heUnassigned;
@@ -63,13 +63,13 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 				continue;
 			}
 			int nextVID = fid.vtx[(i + 1) % vnum] - 1;
-			int curSNID = fid.n[i] - 1;
-			int curSUVID = fid.uv[i] - 1;
+			/*int curSNID = fid.n[i] - 1;
+			int curSUVID = fid.uv[i] - 1;*/
 			vert_t* curVertex = vertMap[curVID];
-			QVector3D* curSN = snMap[curSNID];
+			/*QVector3D* curSN = snMap[curSNID];
 			QVector2D* curSUV = suvMap[curSUVID];
 			face->snMap.insert(make_pair(curVertex, curSN));
-			face->suvMap.insert(make_pair(curVertex, curSUV));
+			face->suvMap.insert(make_pair(curVertex, curSUV));*/
 
 			// Half-edge
 			he_t* he = new he_t(vertMap[curVID], face);
@@ -137,41 +137,66 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
 {
 #ifdef _DEBUG
-	clock_t start_time, end_time;//Timer
-	start_time = clock();
+	clock_t copy_start, start_time, end_time;//Timer
+	copy_start = start_time = clock();
 #endif
 	// copy the vertices set
-	vertSet.clear();
-	vertMap.clear();
+	/*vertSet.clear();
+	vertMap.clear();*/
+	vertSet.reserve(other.vertSet.size());
+	vertMap.reserve(other.vertMap.size());
+	//vertMap = other.vertMap;
 	for (auto v : other.vertSet)
 	{
 		/// he is not set for this vertex
 		vert_t *nv = new vert_t(*v);
 		vertSet.insert(nv);
 		vertMap.insert(make_pair(v->index, nv));
+		//vertMap[v->index] = nv;
 	}
-
-	faceSet.clear();
-	faceMap.clear();
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "Copy Vertex Data from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	start_time = clock();
+#endif
+	/*faceSet.clear();
+	faceMap.clear();*/
+	faceSet.reserve(other.faceSet.size());
+	faceMap.reserve(other.faceMap.size());
+	//faceMap = other.faceMap;
 	for (auto f : other.faceSet)
 	{
-		/// he is not set for this vertex
+		// he is not set for this vertex
 		face_t *nf = new face_t(*f);
 		faceSet.insert(nf);
 		faceMap.insert(make_pair(f->index, nf));
+		//faceMap[f->index] = nf;
 	}
-
-	heSet.clear();
-	heMap.clear();
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "Copy Face Data from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	start_time = clock();
+#endif
+	/*heSet.clear();
+	heMap.clear();*/
+	heSet.reserve(other.heSet.size());
+	heMap.reserve(other.heMap.size());
+	//heSet = other.heSet;
+	//heMap = other.heMap;
 	for (auto he : other.heSet)
 	{
-		/// face, vertex, prev, next, and flip are not set yet
+		// face, vertex, prev, next, and flip are not set yet
 		he_t *nhe = new he_t(*he);
 		heSet.insert(nhe);
 		heMap.insert(make_pair(he->index, nhe));
+		//heMap[he->index] = nhe;
 	}
-
-	/// fill in the pointers
+#ifdef _DEBUG
+	end_time = clock();
+	cout << "Copy Edge Data from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	start_time = clock();
+#endif
+	// fill in the pointers
 	for (auto &he : heSet)
 	{
 		auto he_ref = other.heMap.at(he->index);
@@ -184,14 +209,14 @@ HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
 		he->v = vertMap.at(he_ref->v->index);
 	}
 
-	/// set the half edges for faces
+	// set the half edges for faces
 	for (auto &f : faceSet)
 	{
 		auto f_ref = other.faceMap.at(f->index);
 		f->he = heMap.at(f_ref->he->index);
 	}
 
-	/// set the half edges for vertices
+	// set the half edges for vertices
 	for (auto &v : vertSet)
 	{
 		auto v_ref = other.vertMap.at(v->index);
@@ -201,7 +226,8 @@ HDS_Mesh::HDS_Mesh(const HDS_Mesh &other)
 
 #ifdef _DEBUG
 	end_time = clock();
-	cout << "Copy HDS_Mesh from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	cout << "Build connection from " << &other << " Time:" << (float)(end_time - start_time) / CLOCKS_PER_SEC << "s" << endl;//Timer
+	cout << "Copy HDS_Mesh from " << &other << " Time:" << (float)(end_time - copy_start) / CLOCKS_PER_SEC << "s" << endl;//Timer
 	//start_time = clock();
 #endif
 }
