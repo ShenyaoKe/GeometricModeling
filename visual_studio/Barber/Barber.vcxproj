@@ -49,7 +49,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>UNICODE;WIN32;WIN64;QT_DLL;QT_CORE_LIB;QT_GUI_LIB;QT_OPENGL_LIB;QT_WIDGETS_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\include\Kaguya;.;.\GeneratedFiles;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\src;$(SolutionDir)..\include;$(SolutionDir)..\include\Kaguya;.;.\GeneratedFiles;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -66,7 +66,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>UNICODE;WIN32;WIN64;QT_DLL;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;QT_OPENGL_LIB;QT_WIDGETS_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\include\Kaguya;.;.\GeneratedFiles;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\src;$(SolutionDir)..\include;$(SolutionDir)..\include\Kaguya;.;.\GeneratedFiles;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat />
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
@@ -103,8 +103,10 @@
     <ClCompile Include="GeneratedFiles\Release\moc_OGLViewer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="HairMesh.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="oglHandle.cpp" />
     <ClCompile Include="OGLViewer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +160,8 @@
     <ClInclude Include="..\..\src\MeshLoader.h" />
     <ClInclude Include="GeneratedFiles\ui_About.h" />
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h" />
+    <ClInclude Include="HairMesh.h" />
+    <ClInclude Include="oglHandle.h" />
     <CustomBuild Include="OGLViewer.h">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing OGLViewer.h...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing OGLViewer.h...</Message>
@@ -182,7 +186,11 @@
     </CustomBuild>
     <None Include="frag.glsl" />
     <None Include="id_fs.glsl" />
+    <None Include="id_gs.glsl" />
     <None Include="id_vs.glsl" />
+    <None Include="quad_fs.glsl" />
+    <None Include="quad_gs.glsl" />
+    <None Include="quad_vs.glsl" />
     <None Include="stylesheet.qss" />
     <None Include="vert.glsl" />
   </ItemGroup>

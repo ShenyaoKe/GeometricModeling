@@ -83,6 +83,12 @@
     <ClCompile Include="..\..\src\hds_face.cpp">
       <Filter>Source Files\HDS</Filter>
     </ClCompile>
+    <ClCompile Include="HairMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="oglHandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.ui">
@@ -136,6 +142,12 @@
     <ClInclude Include="..\..\src\common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HairMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="oglHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vert.glsl">
@@ -151,6 +163,18 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="id_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="quad_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="quad_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="quad_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="id_gs.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

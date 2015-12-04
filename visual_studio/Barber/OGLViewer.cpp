@@ -21,10 +21,11 @@ OGLViewer::OGLViewer(QWidget *parent)
 
 
 	// Read obj file
-	box_mesh = new Mesh("../../scene/obj/cube_large.obj");
-	model_mesh = new Mesh("../../scene/obj/monkey.obj");
-	model_mesh->refine(triangleList);
-	mytree = new KdTreeAccel(triangleList);
+#ifdef _DEBUG
+	charMesh = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+#else
+	charMesh = new HDS_Mesh("quad_cube.obj");
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -32,13 +33,6 @@ OGLViewer::OGLViewer(QWidget *parent)
 	//img->writeFile("../../scene/texture/framebuffer.png");
 
 	resetCamera();
-
-	// Initialize transform matrix
-	matrix.setIdentity();// setRotation(20, 0, 0);
-	matrix.exportVBO(model_mat);
-
-	//sphere_matrix = setTranslation(Point3D());
-	//sphere_matrix.exportVBO(sphere_model_mat);
 }
 
 OGLViewer::~OGLViewer()
@@ -77,81 +71,188 @@ void OGLViewer::initializeGL()
 	//////////////////////////////////////////////////////////////////////////
 
 	// Create shader files
-	shader = new GLSLProgram("vert.glsl", "frag.glsl");
-	shader_uid = new GLSLProgram("id_vs.glsl", "id_fs.glsl");
+	shader_obj = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
+	shader_uid = new GLSLProgram("id_vs.glsl", "id_fs.glsl", "id_gs.glsl");
 	
 	// Export vbo for shaders
-	//box_mesh->exportVBO(box_vbo_size, &box_verts, &box_uvs, &box_norms, &box_idxs);
-	model_mesh->exportVBO(model_vbo_size, &model_verts, &model_uvs, &model_norms, &model_uids);
-	
-	bindBox();
-	bindMesh();
+	charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs);
+
+	vao_handles.push_back(bindCharacter());
 
 	// Get uniform variable location
-	shader->add_uniformv("model_matrix");
-	shader->add_uniformv("view_matrix");
-	shader->add_uniformv("proj_matrix");// WorldToCamera matrix
-	shader->add_uniformv("sel_id");
+	shader_obj->add_uniformv("model_matrix");
+	shader_obj->add_uniformv("view_matrix");
+	shader_obj->add_uniformv("proj_matrix");// WorldToCamera matrix
+	shader_obj->add_uniformv("sel_id");
 	shader_uid->add_uniformv("model_matrix");
 	shader_uid->add_uniformv("view_matrix");
 	shader_uid->add_uniformv("proj_matrix");
 
 }
+GLuint OGLViewer::bindCharacter()
+{
+	glDeleteVertexArrays(1, &char_vao);
+	glDeleteBuffers(1, &char_pts_vbo);
+	glDeleteBuffers(1, &char_elb);
+
+	glGenBuffers(1, &char_pts_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, char_pts_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * char_verts.size(), &char_verts[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &char_elb);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, char_elb);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * char_idxs.size(), &char_idxs[0], GL_STATIC_DRAW);
+
+	// Bind VAO
+	glGenVertexArrays(1, &char_vao);
+	glBindVertexArray(char_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, char_pts_vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, char_elb);
+
+	//vao_handles.push_back(box_vao);
+	return char_vao;
+}
+
+void OGLViewer::renderUidBuffer()
+{
+	makeCurrent();
+	QOpenGLFramebufferObject qfbo(width(), height(), QOpenGLFramebufferObject::CombinedDepthStencil, GL_TEXTURE_2D);
+	qfbo.bind();
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK); // cull back face
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	bindCharacter();
+	//glBindVertexArray(char_vao);
+	shader_uid->use_program();
+
+	// Apply uniform matrix
+	//glUniformMatrix4fv((*shader_id)("model_matrix"), 1, GL_FALSE, model_mat);
+	glUniformMatrix4fv((*shader_uid)("view_matrix"), 1, GL_FALSE, view_mat);
+	glUniformMatrix4fv((*shader_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	glDrawElements(GL_LINES_ADJACENCY, char_idxs.size(), GL_UNSIGNED_INT, 0);
+	shader_uid->unuse();
+	qfbo.release();
+	QRgb pixel = qfbo.toImage().pixel(m_lastMousePos[0], m_lastMousePos[1]);
+
+	if ((pixel >> 24) & 0xFF) m_Select = pixel & 0xFFFFFF;
+	else m_Select = -1;
+	cout << "Select ID: " << m_Select << endl;
+}
+
+void OGLViewer::saveFrameBuffer()
+{
+	this->grab().save("../../scene/texture/framebuffer.png");
+	
+}
+
+void OGLViewer::generateHairCage()
+{
+	if (m_Select >= 0)
+	{
+		auto face = charMesh->faceMap.at(m_Select);
+		auto fn = face->computeNormal();
+		auto curHE = face->he;
+		do 
+		{
+			curHE->v->pos += fn * 5;
+			curHE = curHE->next;
+		} while (curHE != face->he);
+	}
+}
+
+void OGLViewer::paintGL()
+{
+	// Make curent window
+	makeCurrent();
+	// Clear background and color buffer
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Model
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK); // cull back face
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		
+	glBindVertexArray(vao_handles[0]);
+	shader_obj->use_program();
+
+	// Apply uniform matrix
+	//glUniformMatrix4fv((*shader)("model_matrix"), 1, GL_FALSE, sphere_model_mat);
+	glUniformMatrix4fv((*shader_obj)("view_matrix"), 1, GL_FALSE, view_mat);
+	glUniformMatrix4fv((*shader_obj)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	glUniform1i((*shader_obj)("sel_id"), m_Select);
+	
+	glDrawElements(GL_LINES_ADJACENCY, char_idxs.size(), GL_UNSIGNED_INT, 0);
+}
+// Redraw function
+void OGLViewer::paintEvent(QPaintEvent *e)
+{
+	// Draw current frame
+	paintGL();
+	
+	process_fps = 1000.0 / process_time.elapsed();
+
+	process_time.start();
+}
+// Resize function
+void OGLViewer::resizeGL(int w, int h)
+{
+	// Widget resize operations
+	view_cam->resizeViewport(width() / static_cast<double>(height()));
+	view_cam->setResolution(width(), height());
+	view_cam->exportVBO(nullptr, proj_mat, nullptr);
+	glViewport(0, 0, width(), height());
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
-	if (e->key() == Qt::Key_W)
+	switch (e->key())
 	{
-		view_cam->zoom(0.0, 0.0, 0.10);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-
-	}
-	else if (e->key() == Qt::Key_S)
-	{
-		view_cam->zoom(0.0, 0.0, -0.10);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_Q)
-	{
-		view_cam->zoom(0.10, 0.0, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_A)
-	{
-		view_cam->zoom(-0.10, 0.0, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_E)
-	{
-		view_cam->zoom(0.0, 0.10, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_D)
-	{
-		view_cam->zoom(0.0, -0.10, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_Home)
+	case Qt::Key_Home:
 	{
 		initParas();
+		break;
 	}
-	// Selection mode switch
-	else if (e->key() == Qt::Key_F8)
+	case Qt::Key_F8:
 	{
 		m_selectMode = OBJECT_SELECT;
+		break;
 	}
-	else if (e->key() == Qt::Key_F11)
+	case Qt::Key_F11:
 	{
 		m_selectMode = FACE_COMPONENT_SELECT;
+		break;
 	}
-	// Save frame buffer
-	else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
+	case Qt::Key_P:
 	{
-		this->saveFrameBuffer();
+		if (e->modifiers() == Qt::ControlModifier)
+		{
+			this->saveFrameBuffer();
+		}
+		break;
 	}
-	//////////////////////////////////////////////////////////////////////////
-	else
+	case Qt::Key_Return:
+	{
+		generateHairCage();
+		charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs);
+		//bindCharacter();
+		break;
+	}
+	default:
 	{
 		QOpenGLWidget::keyPressEvent(e);
+		break;
+	}
 	}
 	update();
 }
@@ -182,8 +283,8 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	int dx = e->x() - m_lastMousePos[0];
 	int dy = e->y() - m_lastMousePos[1];
 
-	printf("dx: %d, dy: %d\n", dx, dy);
-	
+	//printf("dx: %d, dy: %d\n", dx, dy);
+
 	if ((e->buttons() == Qt::LeftButton) && (e->modifiers() == Qt::AltModifier))
 	{
 		view_cam->rotate(dy * 0.25, -dx * 0.25, 0.0);
@@ -215,189 +316,6 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 	update();
 }
 
-void OGLViewer::bindBox()
-{
-	GLuint box_pts_vbo;
-	glGenBuffers(1, &box_pts_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, box_pts_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * box_vbo_size, box_verts, GL_STATIC_DRAW);
-
-	// Bind normal value as color
-	GLuint box_color_vbo;
-	glGenBuffers(1, &box_color_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, box_color_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * box_vbo_size, box_norms, GL_STATIC_DRAW);
-
-	// Bind VAO
-	GLuint box_vao;
-	glGenVertexArrays(1, &box_vao);
-	glBindVertexArray(box_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, box_pts_vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, box_color_vbo);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(1);
-
-	vao_handles.push_back(box_vao);
-}
-
-void OGLViewer::bindMesh()
-{
-	GLuint model_pts_vbo;
-	glGenBuffers(1, &model_pts_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_pts_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * model_vbo_size, model_verts, GL_STATIC_DRAW);
-
-	// Bind normal value as color
-	GLuint model_normal_vbo;
-	glGenBuffers(1, &model_normal_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_normal_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * model_vbo_size, model_norms, GL_STATIC_DRAW);
-
-	// Bind normal value as color
-	GLuint model_uv_vbo;
-	glGenBuffers(1, &model_uv_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_uv_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * model_vbo_size, model_uvs, GL_STATIC_DRAW);
-
-	GLuint model_idx_vbo;
-	glGenBuffers(1, &model_idx_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_idx_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * 3 * model_vbo_size, model_uids, GL_STATIC_DRAW);
-
-	// Bind VAO
-	GLuint model_vao;
-	glGenVertexArrays(1, &model_vao);
-	glBindVertexArray(model_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, model_pts_vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, model_normal_vbo);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, model_uv_vbo);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, model_idx_vbo);
-	glVertexAttribPointer(3, 1, GL_INT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(3);
-
-	vao_handles.push_back(model_vao);
-}
-
-void OGLViewer::renderUidBuffer()
-{
-	makeCurrent();
-	QOpenGLFramebufferObject qfbo(width(), height(), QOpenGLFramebufferObject::CombinedDepthStencil, GL_TEXTURE_2D);
-	qfbo.bind();
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK); // cull back face
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	glBindVertexArray(vao_handles[1]);
-	shader_uid->use_program();
-
-	// Apply uniform matrix
-	//glUniformMatrix4fv((*shader_id)("model_matrix"), 1, GL_FALSE, model_mat);
-	glUniformMatrix4fv((*shader_uid)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*shader_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
-	glDrawArrays(GL_TRIANGLES, 0, model_vbo_size * 3);
-	shader_uid->unuse();
-	qfbo.release();
-	QRgb pixel = qfbo.toImage().pixel(m_lastMousePos[0], m_lastMousePos[1]);
-
-	if ((pixel >> 24) & 0xFF) m_Select = pixel & 0xFFFFFF;
-	else m_Select = -1;
-}
-
-void OGLViewer::saveFrameBuffer()
-{
-	this->grab().save("../../scene/texture/framebuffer.png");
-	
-}
-
-void OGLViewer::paintGL()
-{
-	// Make curent window
-	makeCurrent();
-	// Clear background and color buffer
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	/*if (display_mode == 0)// Wireframe
-	{
-		glDisable(GL_CULL_FACE);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	}
-	else
-	{
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT); // cull back face
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-		//glEnable(GL_BLEND);
-	}
-	// Bind Box VAOs
-	glBindVertexArray(vao_handles[0]);
-	// Use shader program
-	if (display_mode == 0)
-	{
-		shader->use_program();
-	}
-	else
-	{
-		shader_transparent->use_program();
-	}
-	// Apply uniform matrix
-	glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, model_mat);
-	glUniformMatrix4fv(view_mat_loc, 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv(proj_mat_loc, 1, GL_FALSE, proj_mat);
-	glDrawArrays(GL_TRIANGLES, 0, box_vbo_size * 3);*/
-	//////////////////////////////////////////////////////////////////////////
-	// Model
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK); // cull back face
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		
-	glBindVertexArray(vao_handles[1]);
-	shader->use_program();
-
-	// Apply uniform matrix
-	//glUniformMatrix4fv((*shader)("model_matrix"), 1, GL_FALSE, sphere_model_mat);
-	glUniformMatrix4fv((*shader)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-	glUniform1i((*shader)("sel_id"), m_Select);
-	glDrawArrays(GL_TRIANGLES, 0, model_vbo_size * 3);
-
-
-}
-// Redraw function
-void OGLViewer::paintEvent(QPaintEvent *e)
-{
-	// Draw current frame
-	paintGL();
-	
-	process_fps = 1000.0 / process_time.elapsed();
-
-	process_time.start();
-}
-// Resize function
-void OGLViewer::resizeGL(int w, int h)
-{
-	// Widget resize operations
-	view_cam->resizeViewport(width() / static_cast<double>(height()));
-	view_cam->setResolution(width(), height());
-	view_cam->exportVBO(nullptr, proj_mat, nullptr);
-	glViewport(0, 0, width(), height());
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-}
 
 void OGLViewer::initParas()
 {
