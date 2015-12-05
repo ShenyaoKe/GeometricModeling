@@ -7,7 +7,7 @@ in vec2 TexCoord;  // From the geometry shader
 in vec3 position_eye, normal_eye;
 
 
-vec3 Kd = vec3(0.6, 0.8, 1);
+vec3 Kd = vec3(0.4, 0.9, 0.1);
 vec3 La = vec3(0, 0, 0); // grey ambient colour
 // fixed point light properties
 vec3 light_pos_world = vec3(0.0, 100.0, 200.0);
@@ -28,7 +28,7 @@ void main()
 	vec3 Id = mix(La, Kd, dot_prod); // final diffuse intensity
 	
 	// final colour
-	frag_color = vec4(1,0,0, 1.0);
+	frag_color = vec4(Id, 1.0);
 	//frag_color = vec4(0.1 * gl_PrimitiveID, 0, 0, 1.0);
 
 	/*

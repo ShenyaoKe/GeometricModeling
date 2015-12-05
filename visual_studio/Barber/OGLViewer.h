@@ -103,9 +103,12 @@ private://Scene data
 	HairMesh* hairMesh;
 	vector<GLfloat> hmsh_verts;
 	vector<GLuint> hmsh_idxs;
+	vector<GLuint> hmsh_offset;
 	GLuint hmsh_pts_vbo;
 	GLuint hmsh_elb;
 	GLuint hmsh_vao;
+	int curLayerID = 0;
+	int curStrokeID = 0;
 
 	// Bind VAO
 

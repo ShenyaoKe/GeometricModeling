@@ -183,41 +183,19 @@ void OGLViewer::saveFrameBuffer()
 	
 }
 
-void OGLViewer::generateHairCage()
-{
-	if (m_Select >= 0)
-	{
-		auto face = charMesh->faceMap.at(m_Select);
-		HairMeshLayer* testHair = new HairMeshLayer(face);
-		if (hairMesh == nullptr)
-		{
-			hairMesh = new HairMesh;
-		}
-		hairMesh->push_back(testHair);
-		testHair->exportIndexedVBO(&hmsh_verts, &hmsh_idxs);
-		/*auto fn = face->computeNormal();
-		auto curHE = face->he;
-		do 
-		{
-			curHE->v->pos += fn * 5;
-			curHE = curHE->next;
-		} while (curHE != face->he);*/
-
-	}
-}
 
 void OGLViewer::paintGL()
 {
 	// Make curent window
 	makeCurrent();
 	// Clear background and color buffer
-	glClearColor(0, 0, 0, 0);
+	glClearColor(0.6, 0.6, 0.6, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Character
 
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); // cull back face
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -238,7 +216,6 @@ void OGLViewer::paintGL()
 	// Hair Mesh
 	if (hairMesh != nullptr)
 	{
-		glDisable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK); // cull back face
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -281,6 +258,22 @@ void OGLViewer::resizeGL(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
+void OGLViewer::generateHairCage()
+{
+	if (m_Select >= 0)
+	{
+		auto face = charMesh->faceMap.at(m_Select);
+		LayeredHairMesh* newStroke = new LayeredHairMesh(face);
+		if (hairMesh == nullptr)
+		{
+			hairMesh = new HairMesh;
+		}
+		hairMesh->push_back(newStroke);
+		hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
+
+
+	}
+}
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
 	switch (e->key())
@@ -311,9 +304,71 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	case Qt::Key_Return:
 	{
 		generateHairCage();
-		charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs, 1);
+		//charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs, 1);
 		//bindCharacter();
-		update();
+		break;
+	}
+	case Qt::Key_E:
+	{
+
+		if (e->modifiers() == Qt::ControlModifier)
+		{
+			auto curLayer = hairMesh->layers.back();
+			curLayer->extrude(1);
+			hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
+		}
+		break;
+	}
+	case Qt::Key_W://scale
+	{
+		auto curLayer = hairMesh->layers[curStrokeID];
+		curLayer->shrink(curLayerID, 1.2);
+		hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
+		break;
+	}
+	case Qt::Key_S://scale
+	{
+		auto curLayer = hairMesh->layers[curStrokeID];
+		curLayer->shrink(curLayerID, 0.8);
+		hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
+		break;
+	}
+	case Qt::Key_Q:
+	{
+		auto curLayer = hairMesh->layers[curStrokeID];
+		curLayer->twist(curLayerID, 0.5);
+		hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
+		break;
+	}
+	case Qt::Key_A:
+	{
+		auto curLayer = hairMesh->layers[curStrokeID];
+		curLayer->twist(curLayerID, -0.5);
+		hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
+		break;
+	}
+	case Qt::Key_Up:
+	{
+		curLayerID = min(++curLayerID, hairMesh->sizeAtStroke(curStrokeID));
+		cout << "Layer: " << curLayerID << endl;
+		break;
+	}
+	case Qt::Key_Down:
+	{
+		curLayerID = max(--curLayerID, 0);
+		cout << "Layer: " << curLayerID << endl;
+		break;
+	}
+	case Qt::Key_Left:
+	{
+		curStrokeID = min(++curStrokeID, (int)hairMesh->layers.size());
+		cout << "Stroke: " << curStrokeID << endl;
+		break;
+	}
+	case Qt::Key_Right:
+	{
+		curStrokeID = max(--curStrokeID, 0);
+		cout << "Stroke: " << curStrokeID << endl;
 		break;
 	}
 	default:

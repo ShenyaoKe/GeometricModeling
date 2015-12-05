@@ -25,7 +25,7 @@ void main()
 	vec4 v2 = normalize(gl_in[3].gl_Position - gl_in[1].gl_Position);
 
 	normal = normalize(cross(v1.xyz, v2.xyz));
-	normal_eye = normalize(view_matrix * vec4(normal, 0)).xyz;
+	normal_eye = normalize((view_matrix * vec4(normal, 0)).xyz);
 
 	// Projected direction
 	vec2 e0 = (p1 - p0).xy;

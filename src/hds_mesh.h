@@ -69,7 +69,7 @@ private:
 	friend class Subdivision;
 	friend class Simplification;
 	friend class HairMesh;
-	friend class HairMeshLayer;
+	friend class LayeredHairMesh;
 	friend class OGLViewer;
 private:
 	unordered_set<he_t*> heSet;
