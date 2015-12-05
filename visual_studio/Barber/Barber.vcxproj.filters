@@ -177,5 +177,14 @@
     <None Include="id_gs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="hairmesh_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="hairmesh_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="hairmesh_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

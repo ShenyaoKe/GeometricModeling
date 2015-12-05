@@ -3,6 +3,7 @@
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, m_selectMode(OBJECT_SELECT), m_Select(-1)
+	, charMesh(nullptr), hairMesh(nullptr)
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -59,8 +60,8 @@ void OGLViewer::initializeGL()
 	printf("OpenGL version supported %s\n", version);
 
 	// Enable OpenGL features
-	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_LINE_SMOOTH);
+	//glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
 	glBlendEquation(GL_FUNC_ADD);
@@ -72,10 +73,11 @@ void OGLViewer::initializeGL()
 
 	// Create shader files
 	shader_obj = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
+	shader_hairmesh = new GLSLProgram("hairmesh_vs.glsl", "hairmesh_fs.glsl", "hairmesh_gs.glsl");
 	shader_uid = new GLSLProgram("id_vs.glsl", "id_fs.glsl", "id_gs.glsl");
 	
 	// Export vbo for shaders
-	charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs);
+	charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs, 1);
 
 	vao_handles.push_back(bindCharacter());
 
@@ -84,6 +86,10 @@ void OGLViewer::initializeGL()
 	shader_obj->add_uniformv("view_matrix");
 	shader_obj->add_uniformv("proj_matrix");// WorldToCamera matrix
 	shader_obj->add_uniformv("sel_id");
+	shader_hairmesh->add_uniformv("model_matrix");
+	shader_hairmesh->add_uniformv("view_matrix");
+	shader_hairmesh->add_uniformv("proj_matrix");// WorldToCamera matrix
+	shader_hairmesh->add_uniformv("sel_id");
 	shader_uid->add_uniformv("model_matrix");
 	shader_uid->add_uniformv("view_matrix");
 	shader_uid->add_uniformv("proj_matrix");
@@ -113,6 +119,32 @@ GLuint OGLViewer::bindCharacter()
 
 	//vao_handles.push_back(box_vao);
 	return char_vao;
+}
+
+GLuint OGLViewer::bindHairMesh()
+{
+	glDeleteVertexArrays(1, &hmsh_vao);
+	glDeleteBuffers(1, &hmsh_pts_vbo);
+	glDeleteBuffers(1, &hmsh_elb);
+
+	glGenBuffers(1, &hmsh_pts_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, hmsh_pts_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * hmsh_verts.size(), &hmsh_verts[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &hmsh_elb);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hmsh_elb);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * hmsh_idxs.size(), &hmsh_idxs[0], GL_STATIC_DRAW);
+
+	// Bind VAO
+	glGenVertexArrays(1, &hmsh_vao);
+	glBindVertexArray(hmsh_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, hmsh_pts_vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hmsh_elb);
+
+	//vao_handles.push_back(box_vao);
+	return hmsh_vao;
 }
 
 void OGLViewer::renderUidBuffer()
@@ -156,13 +188,21 @@ void OGLViewer::generateHairCage()
 	if (m_Select >= 0)
 	{
 		auto face = charMesh->faceMap.at(m_Select);
-		auto fn = face->computeNormal();
+		HairMeshLayer* testHair = new HairMeshLayer(face);
+		if (hairMesh == nullptr)
+		{
+			hairMesh = new HairMesh;
+		}
+		hairMesh->push_back(testHair);
+		testHair->exportIndexedVBO(&hmsh_verts, &hmsh_idxs);
+		/*auto fn = face->computeNormal();
 		auto curHE = face->he;
 		do 
 		{
 			curHE->v->pos += fn * 5;
 			curHE = curHE->next;
-		} while (curHE != face->he);
+		} while (curHE != face->he);*/
+
 	}
 }
 
@@ -175,12 +215,15 @@ void OGLViewer::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//////////////////////////////////////////////////////////////////////////
-	// Model
+	// Character
+
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); // cull back face
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		
-	glBindVertexArray(vao_handles[0]);
+	
+	bindCharacter();
+	//glBindVertexArray(vao_handles[0]);
 	shader_obj->use_program();
 
 	// Apply uniform matrix
@@ -190,6 +233,30 @@ void OGLViewer::paintGL()
 	glUniform1i((*shader_obj)("sel_id"), m_Select);
 	
 	glDrawElements(GL_LINES_ADJACENCY, char_idxs.size(), GL_UNSIGNED_INT, 0);
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Hair Mesh
+	if (hairMesh != nullptr)
+	{
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK); // cull back face
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		bindHairMesh();
+		//glBindVertexArray(vao_handles[0]);
+		shader_hairmesh->use_program();
+
+		// Apply uniform matrix
+		//glUniformMatrix4fv((*shader)("model_matrix"), 1, GL_FALSE, sphere_model_mat);
+		glUniformMatrix4fv((*shader_hairmesh)("view_matrix"), 1, GL_FALSE, view_mat);
+		glUniformMatrix4fv((*shader_hairmesh)("proj_matrix"), 1, GL_FALSE, proj_mat);
+		//glUniform1i((*shader_obj)("sel_id"), m_Select);
+
+		glDrawElements(GL_LINES_ADJACENCY, hmsh_idxs.size(), GL_UNSIGNED_INT, 0);
+		shader_hairmesh->unuse();
+	}
+	
 }
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
@@ -244,8 +311,9 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	case Qt::Key_Return:
 	{
 		generateHairCage();
-		charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs);
+		charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs, 1);
 		//bindCharacter();
+		update();
 		break;
 	}
 	default:

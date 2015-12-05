@@ -1,13 +1,29 @@
 #include "hairMesh.h"
 
 
-HairMesh::HairMesh()
+HairMeshLayer::HairMeshLayer(const HDS_Face* src)
+	: root(src)
+	, vertice(src->corners())
 {
+	seg = vertice.size();
+	for (auto v : vertice)
+	{
+		points.push_back(v->pos);
+	}
 }
 
+HairMesh::HairMesh()
+{
+
+}
 
 HairMesh::~HairMesh()
 {
+}
+
+void HairMesh::push_back(HairMeshLayer* layer)
+{
+	layers.push_back(layer);
 }
 
 void HairMeshLayer::exportIndexedVBO(
@@ -15,11 +31,7 @@ void HairMeshLayer::exportIndexedVBO(
 {
 	bool has_vert(false), has_texcoord(false), has_normal(false), has_uid(false);
 
-	if (points.size() < seg)
-	{
-		//export root
-		return;
-	}
+	
 	if (vtx_array == nullptr)
 	{
 		vtx_array->clear();
@@ -33,6 +45,17 @@ void HairMeshLayer::exportIndexedVBO(
 		vtx_array->push_back(pt.y());
 		vtx_array->push_back(pt.z());
 	}
+
+	// If no mesh extruded
+	if (points.size() == seg)
+	{
+		for (int i = 0; i < seg; i++)
+		{
+			idx_array->push_back(i);
+		}
+		return;
+	}
+
 	for (int i = seg; i < points.size() ; i++)
 	{
 		if (i % seg == 0)

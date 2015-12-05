@@ -70,6 +70,8 @@ protected:
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
 	GLuint bindCharacter();
+	GLuint bindHairMesh();
+
 	void renderUidBuffer();
 	void saveFrameBuffer();
 
@@ -96,13 +98,21 @@ private://Scene data
 	vector<GLuint> char_idxs;
 	GLuint char_pts_vbo;
 	GLuint char_elb;
+	GLuint char_vao;
+
+	HairMesh* hairMesh;
+	vector<GLfloat> hmsh_verts;
+	vector<GLuint> hmsh_idxs;
+	GLuint hmsh_pts_vbo;
+	GLuint hmsh_elb;
+	GLuint hmsh_vao;
 
 	// Bind VAO
-	GLuint char_vao;
 
 	vector<GLuint> vao_handles;
 
-	GLSLProgram* shader_obj;// OpenGL shader program
+	GLSLProgram* shader_obj;// Character Shader
+	GLSLProgram* shader_hairmesh;// Hair Mesh Shader
 	GLSLProgram* shader_uid;// Picking Shader
 
 };
