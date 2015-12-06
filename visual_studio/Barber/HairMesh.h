@@ -10,6 +10,7 @@ public:
 	LayeredHairMesh(const HDS_Face* src);
 	~LayeredHairMesh();
 	void extrude(double val);
+	void translate(int val);
 	void shrink(int lv, double scale);
 	void twist(int lv, double angle);
 	void exportIndexedVBO(int offset = 0,

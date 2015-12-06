@@ -196,8 +196,8 @@ void OGLViewer::paintGL()
 	// Character
 
 	//glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK); // cull back face
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_BACK); // cull back face
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
 	bindCharacter();
@@ -216,8 +216,8 @@ void OGLViewer::paintGL()
 	// Hair Mesh
 	if (hairMesh != nullptr)
 	{
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK); // cull back face
+		//glEnable(GL_CULL_FACE);
+		//glCullFace(GL_BACK); // cull back face
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		bindHairMesh();
@@ -269,6 +269,7 @@ void OGLViewer::generateHairCage()
 			hairMesh = new HairMesh;
 		}
 		hairMesh->push_back(newStroke);
+		curStrokeID = hairMesh->layers.size() - 1;
 		hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
 
 
@@ -313,8 +314,8 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 
 		if (e->modifiers() == Qt::ControlModifier)
 		{
-			auto curLayer = hairMesh->layers.back();
-			curLayer->extrude(1);
+			auto curLayer = hairMesh->layers[curStrokeID];
+			curLayer->extrude(5);
 			hairMesh->exportIndexedVBO(&hmsh_verts, &hmsh_idxs, &hmsh_offset);
 		}
 		break;
@@ -355,7 +356,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	}
 	case Qt::Key_Down:
 	{
-		curLayerID = max(--curLayerID, 0);
+		curLayerID = max(--curLayerID, 1);
 		cout << "Layer: " << curLayerID << endl;
 		break;
 	}
