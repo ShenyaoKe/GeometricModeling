@@ -150,12 +150,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vert.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="frag.glsl">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="stylesheet.qss">
       <Filter>Resource Files</Filter>
     </None>
@@ -184,6 +178,30 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="hairmesh_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="id_layer_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="id_layer_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="id_stroke_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sel_layer_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sel_layer_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sel_layer_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="wireframe_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="wireframe_gs.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

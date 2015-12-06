@@ -5,9 +5,9 @@ out vec4 frag_color; // final colour of surface
 uniform int mode = 0;
 void main()
 {
-	if (mode != 0)
+	if (mode != 2)
 	{
-		frag_color = vec4(0, 0, 0, 0);
+		discard;
 	}
 	else
 	{

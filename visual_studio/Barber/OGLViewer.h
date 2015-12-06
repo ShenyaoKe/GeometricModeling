@@ -49,8 +49,8 @@ public:
 	enum Select_Mode
 	{
 		OBJECT_SELECT,
-		COMPONENT_SELECT,
-		FACE_COMPONENT_SELECT
+		STROKE_SELECT,
+		LAYER_SELECT
 	};
 	//OGLViewer();
 	OGLViewer(QWidget *parent = nullptr);
@@ -76,6 +76,8 @@ private:
 	void saveFrameBuffer();
 
 	void generateHairCage();
+signals:
+	void echoHint(const QString &);
 public:
 	double process_fps;
 protected:
@@ -102,13 +104,15 @@ private://Scene data
 
 	HairMesh* hairMesh;
 	vector<GLfloat> hmsh_verts;
+	vector<GLfloat> hmsh_colors;
 	vector<GLuint> hmsh_idxs;
-	vector<GLuint> hmsh_offset;
+	vector<GLuint> hmsh_vtx_offset;
+	vector<GLuint> hmsh_idx_offset;
 	GLuint hmsh_pts_vbo;
 	GLuint hmsh_elb;
 	GLuint hmsh_vao;
-	int curLayerID = 0;
-	int curStrokeID = 0;
+	int curLayerID = -1;
+	int curStrokeID = -1;
 
 	// Bind VAO
 
@@ -116,7 +120,11 @@ private://Scene data
 
 	GLSLProgram* shader_obj;// Character Shader
 	GLSLProgram* shader_hairmesh;// Hair Mesh Shader
+	GLSLProgram* shader_wireframe;// Hair Mesh Shader
+	GLSLProgram* shader_sel_layer;// Selected Hair Layer Shader
 	GLSLProgram* shader_uid;// Picking Shader
+	GLSLProgram* shader_stroke_uid;// Picking Shader
+	GLSLProgram* shader_layer_uid;// Picking Shader
 
 };
 

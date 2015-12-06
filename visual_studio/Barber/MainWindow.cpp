@@ -12,6 +12,9 @@ MainWindow::MainWindow(QWidget *parent)
 	setWindowTitle(tr("Barber"));
 
 	m_oglviewer->setFocusPolicy(Qt::StrongFocus);
+	ui.statusBar->showMessage(tr("hahahaha"));
+	connect(m_oglviewer, &OGLViewer::echoHint, [&](const QString &msg) {
+		ui.statusBar->showMessage(msg, 2000); });
 }
 
 MainWindow::~MainWindow()

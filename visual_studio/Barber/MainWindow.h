@@ -19,21 +19,10 @@ public:
 	MainWindow(QWidget *parent = 0);
 	~MainWindow();
 
-	/*virtual void render(QPainter *painter);
-	virtual void render();
-
-	virtual void initialize();
-
-	void setAnimating(bool animating);*/
-
-public slots:
-	/*void renderLater();
-	void renderNow();*/
-void on_actionAbout_triggered();
-//void aboutwindow();
+	public slots:
+	void on_actionAbout_triggered();
+	//void aboutwindow();
 protected:
-	//bool event(QEvent *event) Q_DECL_OVERRIDE;
-	//void exposeEvent(QExposeEvent *event) Q_DECL_OVERRIDE;
 	void closeEvent(QCloseEvent *e);
 private:
 	bool m_update_pending;

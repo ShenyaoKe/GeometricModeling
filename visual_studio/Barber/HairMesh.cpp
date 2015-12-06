@@ -4,21 +4,36 @@
 LayeredHairMesh::LayeredHairMesh(const HDS_Face* src)
 	: root(src)
 	, vertice(src->corners())
+	//, color(rand() % 256, rand() % 256, rand() % 256)
 {
 	seg = vertice.size();
 	for (auto v : vertice)
 	{
 		points.push_back(v->pos);
 	}
+
+	color.setHsv(rand() % 360, 180, 255);
 }
 
-HairMesh::HairMesh()
+LayeredHairMesh::~LayeredHairMesh()
 {
+	root = nullptr;
+	vertice.clear();
+	points.clear();
+}
 
+HairMesh::HairMesh(const HDS_Mesh* src)
+	: ref_mesh(src)
+{
 }
 
 HairMesh::~HairMesh()
 {
+	for (auto layer : layers)
+	{
+		delete layer;
+	}
+	layers.clear();
 }
 
 void HairMesh::push_back(LayeredHairMesh* layer)
@@ -32,23 +47,34 @@ int HairMesh::sizeAtStroke(int i) const
 	return curLayer->points.size() / curLayer->seg;
 }
 
+bool HairMesh::empty() const
+{
+	return layers.size() == 0;
+}
+
 void HairMesh::exportIndexedVBO(
 	vector<float>* vtx_array, vector<uint>* idx_array,
-	vector<uint>* offset_array, vector<float>* layer_color) const
+	vector<uint>* vtx_offset_array, vector<uint>* idx_offset_array,
+	vector<float>* layer_color) const
 {
-	
+	int layerSize = layers.size();
 	if (vtx_array != nullptr)
 	{
 		vtx_array->clear();
-		if (offset_array != nullptr)
+		if (vtx_offset_array != nullptr)
 		{
-			offset_array->clear();
-			offset_array->reserve(layers.size());
+			vtx_offset_array->clear();
+			vtx_offset_array->reserve(layerSize);
+		}
+		if (idx_offset_array)
+		{
+			idx_offset_array->clear();
+			idx_offset_array->reserve(layerSize + 1);
 		}
 		int size = 0;
 		for (auto layer : layers)
 		{
-			offset_array->push_back(size);
+			vtx_offset_array->push_back(size);
 			size += layer->points.size();
 		}
 		vtx_array->reserve(size * 3);
@@ -57,10 +83,25 @@ void HairMesh::exportIndexedVBO(
 	{
 		idx_array->clear();
 	}
-	for (int i = 0; i < layers.size(); i++)
+	
+	idx_offset_array->push_back(0);
+	for (int i = 0; i < layerSize; i++)
 	{
 		auto layer = layers[i];
-		layer->exportIndexedVBO((*offset_array)[i], vtx_array, idx_array);
+		layer->exportIndexedVBO((*vtx_offset_array)[i], vtx_array, idx_array);
+		idx_offset_array->push_back(idx_array->size());
+	}
+	if (layer_color != nullptr)
+	{
+		layer_color->clear();
+		layer_color->reserve(layerSize * 3);
+		for (int i = 0; i < layerSize; i++)
+		{
+			auto& curColor = layers[i]->color;
+			layer_color->push_back(static_cast<float>(curColor.redF()));
+			layer_color->push_back(static_cast<float>(curColor.greenF()));
+			layer_color->push_back(static_cast<float>(curColor.blueF()));
+		}
 	}
 }
 
@@ -124,6 +165,16 @@ void LayeredHairMesh::twist(int lv, double angle)
 	for (int i = lv; i < lv + seg; i++)
 	{
 		points[i] = rot * (points[i] - center) + center;
+	}
+}
+
+void LayeredHairMesh::remove(int lv)
+{
+	auto curPt = points.begin() + lv * seg;
+	if (lv > 0)
+	{
+
+		points.erase(curPt, curPt + seg);
 	}
 }
 
