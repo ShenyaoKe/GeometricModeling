@@ -160,3 +160,97 @@ QDockWidget::close-button, QDockWidget::float-button {
     border: 1px solid #646464;
     background: #444444;
 }
+/*-------------------------------------------------------------*/
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 2px solid #464646;
+    position: absolute;
+    top: -0.5em;
+}
+
+QTabWidget::tab-bar {
+    alignment: left;
+}
+
+/* Style the tab using the tab sub-control. Note that
+    it reads QTabBar _not_ QTabWidget */
+QTabBar::tab {
+    background: #222222;
+    min-width: 30ex;
+	min-height: 16px;
+    padding: 2px;
+}
+
+QTabBar::tab:hover {
+	color: #FFFFFF;
+    background: #555555;
+}
+
+QTabBar::tab:selected {
+	color: #FFFFFF;
+    background: #666666;
+    border-color: #9B9B9B;
+    border-bottom-color: #C2C7CB; /* same as pane color */
+}
+QTabBar::tear {
+}
+
+QTabBar::scroller { /* the width of the scroll buttons */
+    width: 20px;
+}
+
+QTabBar QToolButton { /* the scroll buttons are tool buttons */
+	border-radius: 0px;
+}
+
+QTabBar QToolButton::right-arrow { /* the arrow mark in the tool buttons */
+    image: url(:/icons/arrowRight.png);
+}
+
+QTabBar QToolButton::left-arrow {
+    image: url(:/icons/arrowLeft.png);
+}
+/*-------------------------------------------------------------*/
+QDoubleSpinBox {
+    border-width: 3;
+	color: #FFFFFF;
+	background: #646464;
+}
+
+QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right; /* position at the top right corner */
+
+	background: #444444;
+}
+
+QDoubleSpinBox::up-button:hover {
+	background: #545454;
+}
+
+QDoubleSpinBox::up-button:pressed {
+	background: #646464;
+}
+
+QDoubleSpinBox::up-arrow {
+	image: url(:/icons/arrowUp.png);
+}
+
+QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right; /* position at bottom right corner */
+
+	background: #444444;
+}
+
+QDoubleSpinBox::down-button:hover {
+	background: #545454;
+}
+
+QDoubleSpinBox::down-button:pressed {
+	background: #646464;
+}
+
+QDoubleSpinBox::down-arrow {
+	image: url(:/icons/arrowDown.png);
+
+}

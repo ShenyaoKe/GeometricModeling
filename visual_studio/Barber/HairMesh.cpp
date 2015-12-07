@@ -64,7 +64,7 @@ void HairMesh::exportIndexedVBO(
 		if (vtx_offset_array != nullptr)
 		{
 			vtx_offset_array->clear();
-			vtx_offset_array->reserve(layerSize);
+			vtx_offset_array->reserve(layerSize + 1);
 		}
 		if (idx_offset_array)
 		{
@@ -77,6 +77,7 @@ void HairMesh::exportIndexedVBO(
 			vtx_offset_array->push_back(size);
 			size += layer->points.size();
 		}
+		vtx_offset_array->push_back(size);
 		vtx_array->reserve(size * 3);
 	}
 	if (idx_array != nullptr)

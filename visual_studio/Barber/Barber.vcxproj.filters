@@ -42,6 +42,15 @@
     <Filter Include="Source Files\HDS">
       <UniqueIdentifier>{d7174265-8346-4165-9b8a-be7746497cf0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\hairstroke">
+      <UniqueIdentifier>{02f20055-e367-4d96-afa8-0e0c1ac060b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\objects">
+      <UniqueIdentifier>{ae5d2ec8-ae24-4f28-9d06-cf9dbcafc348}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\picking">
+      <UniqueIdentifier>{8d7343e4-7328-46ec-bbe8-ab0eec487844}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -153,56 +162,74 @@
     <None Include="stylesheet.qss">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="id_fs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="hairstroke_fs.glsl">
+      <Filter>Shaders\hairstroke</Filter>
     </None>
-    <None Include="id_vs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="hairstroke_geom_te.glsl">
+      <Filter>Shaders\hairstroke</Filter>
     </None>
-    <None Include="quad_fs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="hairstroke_gs.glsl">
+      <Filter>Shaders\hairstroke</Filter>
     </None>
-    <None Include="quad_gs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="hairstroke_tc.glsl">
+      <Filter>Shaders\hairstroke</Filter>
     </None>
-    <None Include="quad_vs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="hairstroke_te.glsl">
+      <Filter>Shaders\hairstroke</Filter>
     </None>
-    <None Include="id_gs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="hairstroke_vs.glsl">
+      <Filter>Shaders\hairstroke</Filter>
     </None>
     <None Include="hairmesh_fs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="hairmesh_gs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="hairmesh_vs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
-    <None Include="id_layer_fs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="quad_fs.glsl">
+      <Filter>Shaders\objects</Filter>
     </None>
-    <None Include="id_layer_gs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="quad_gs.glsl">
+      <Filter>Shaders\objects</Filter>
     </None>
-    <None Include="id_stroke_fs.glsl">
-      <Filter>Shaders</Filter>
+    <None Include="quad_vs.glsl">
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="sel_layer_fs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="sel_layer_gs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="sel_layer_vs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="wireframe_fs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
     </None>
     <None Include="wireframe_gs.glsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="id_fs.glsl">
+      <Filter>Shaders\picking</Filter>
+    </None>
+    <None Include="id_gs.glsl">
+      <Filter>Shaders\picking</Filter>
+    </None>
+    <None Include="id_layer_fs.glsl">
+      <Filter>Shaders\picking</Filter>
+    </None>
+    <None Include="id_layer_gs.glsl">
+      <Filter>Shaders\picking</Filter>
+    </None>
+    <None Include="id_stroke_fs.glsl">
+      <Filter>Shaders\picking</Filter>
+    </None>
+    <None Include="id_vs.glsl">
+      <Filter>Shaders\picking</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -12,9 +12,12 @@ MainWindow::MainWindow(QWidget *parent)
 	setWindowTitle(tr("Barber"));
 
 	m_oglviewer->setFocusPolicy(Qt::StrongFocus);
-	ui.statusBar->showMessage(tr("hahahaha"));
-	connect(m_oglviewer, &OGLViewer::echoHint, [&](const QString &msg) {
-		ui.statusBar->showMessage(msg, 2000); });
+
+	connect(m_oglviewer, &OGLViewer::echoHint,
+		[&](const QString &msg) { ui.statusBar->showMessage(msg, 2000); });
+	connect(ui.hmsh_opacity,
+		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+		[&](double val) { m_oglviewer->hair_mesh_opacity = val; update(); });
 }
 
 MainWindow::~MainWindow()

@@ -3,7 +3,8 @@
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, m_selectMode(OBJECT_SELECT), m_Select(-1)
-	//, charMesh(nullptr), hairMesh(nullptr)
+	, curStrokeID(-1), curLayerID(-1)
+	, hair_mesh_opacity(1.0)
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -59,6 +60,12 @@ void OGLViewer::initializeGL()
 	printf("Renderer: %s\n", renderer);
 	printf("OpenGL version supported %s\n", version);
 
+	initShader();
+
+	// Export vbo for shaders
+	charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs, 1);
+	bindCharacter();
+
 	// Enable OpenGL features
 	//glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_LINE_SMOOTH);
@@ -69,53 +76,66 @@ void OGLViewer::initializeGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glFrontFace(GL_CCW); // set counter-clock-wise vertex order to mean the front
 
+	/*GLint maxpathvertex;
+	glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxpathvertex);
+	cout << "max patch vertex: " << maxpathvertex << endl;*/
+}
 
-	//////////////////////////////////////////////////////////////////////////
-
+void OGLViewer::initShader()
+{
 	// Create shader files
-	shader_obj = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
-	shader_hairmesh = new GLSLProgram("hairmesh_vs.glsl", "hairmesh_fs.glsl", "hairmesh_gs.glsl");
-	shader_wireframe = new GLSLProgram("hairmesh_vs.glsl", "wireframe_fs.glsl", "wireframe_gs.glsl");
-	shader_sel_layer = new GLSLProgram("sel_layer_vs.glsl", "sel_layer_fs.glsl", "sel_layer_gs.glsl");
-	shader_uid = new GLSLProgram("id_vs.glsl", "id_fs.glsl", "id_gs.glsl");
-	shader_stroke_uid = new GLSLProgram("id_vs.glsl", "id_stroke_fs.glsl", "id_gs.glsl");
-	shader_layer_uid = new GLSLProgram("id_vs.glsl", "id_layer_fs.glsl", "id_layer_gs.glsl");
-	
-	// Export vbo for shaders
-	charMesh->exportIndexedVBO(&char_verts, nullptr, nullptr, &char_idxs, 1);
-	bindCharacter();
-	//vao_handles.push_back(bindCharacter());
 
 	// Get uniform variable location
+	shader_obj = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
 	shader_obj->add_uniformv("model_matrix");
 	shader_obj->add_uniformv("view_matrix");
 	shader_obj->add_uniformv("proj_matrix");
 	shader_obj->add_uniformv("sel_id");
 
+	shader_hairmesh = new GLSLProgram("hairmesh_vs.glsl", "hairmesh_fs.glsl", "hairmesh_gs.glsl");
 	shader_hairmesh->add_uniformv("model_matrix");
 	shader_hairmesh->add_uniformv("view_matrix");
 	shader_hairmesh->add_uniformv("proj_matrix");
 	shader_hairmesh->add_uniformv("selected");
 	shader_hairmesh->add_uniformv("color");
+	shader_hairmesh->add_uniformv("opacity");
 
+	shader_wireframe = new GLSLProgram("hairmesh_vs.glsl", "wireframe_fs.glsl", "wireframe_gs.glsl");
 	shader_wireframe->add_uniformv("view_matrix");
 	shader_wireframe->add_uniformv("proj_matrix");
 
+	shader_sel_layer = new GLSLProgram("sel_layer_vs.glsl", "sel_layer_fs.glsl", "sel_layer_gs.glsl");
 	shader_sel_layer->add_uniformv("view_matrix");
 	shader_sel_layer->add_uniformv("proj_matrix");
 
 	// Shaders for picking
+	shader_uid = new GLSLProgram("id_vs.glsl", "id_fs.glsl", "id_gs.glsl");
 	shader_uid->add_uniformv("view_matrix");
 	shader_uid->add_uniformv("proj_matrix");
 	shader_uid->add_uniformv("mode");
+
+	shader_stroke_uid = new GLSLProgram("id_vs.glsl", "id_stroke_fs.glsl", "id_gs.glsl");
 	shader_stroke_uid->add_uniformv("view_matrix");
 	shader_stroke_uid->add_uniformv("proj_matrix");
 	shader_stroke_uid->add_uniformv("strokeid");
 	shader_stroke_uid->add_uniformv("mode");
+
+	shader_layer_uid = new GLSLProgram("id_vs.glsl", "id_layer_fs.glsl", "id_layer_gs.glsl");
 	shader_layer_uid->add_uniformv("view_matrix");
 	shader_layer_uid->add_uniformv("proj_matrix");
 	shader_layer_uid->add_uniformv("mode");
+
+	// Hair Strands Shader
+	shader_hairstroke = new GLSLProgram("hairstroke_vs.glsl", "hairstroke_fs.glsl",
+		"hairstroke_gs.glsl", "hairstroke_tc.glsl", "hairstroke_te.glsl");
+	shader_layer_uid->add_uniformv("view_matrix");
+	shader_layer_uid->add_uniformv("proj_matrix");
+	shader_layer_uid->add_uniformv("degree");
+	shader_layer_uid->add_uniformv("segments");
+	shader_layer_uid->add_uniformv("NumStrips");
+	shader_layer_uid->add_uniformv("pointsize");
 }
+
 GLuint OGLViewer::bindCharacter()
 {
 	glDeleteVertexArrays(1, &char_vao);
@@ -258,7 +278,6 @@ void OGLViewer::renderUidBuffer()
 void OGLViewer::saveFrameBuffer()
 {
 	this->grab().save("../../scene/texture/screenshot.png");
-	
 }
 
 
@@ -295,18 +314,16 @@ void OGLViewer::paintGL()
 	// Hair Mesh
 	if (!hairMesh->empty())
 	{
-		//glEnable(GL_CULL_FACE);
-		//glCullFace(GL_BACK); // cull back face
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		bindHairMesh();
-		//glBindVertexArray(hmsh_vao);
 		
 		/************************************************************************/
 		/* Draw Hair Mesh                                                       */
 		/************************************************************************/
 		shader_hairmesh->use_program();
 
+		glUniform1f((*shader_hairmesh)("opacity"), hair_mesh_opacity);
 		glUniformMatrix4fv((*shader_hairmesh)("view_matrix"), 1, GL_FALSE, view_mat);
 		glUniformMatrix4fv((*shader_hairmesh)("proj_matrix"), 1, GL_FALSE, proj_mat);
 
@@ -344,6 +361,20 @@ void OGLViewer::paintGL()
 			glUniformMatrix4fv((*shader_sel_layer)("proj_matrix"), 1, GL_FALSE, proj_mat);
 			glDrawArrays(GL_LINES_ADJACENCY, startID, 4);
 		}
+		if (m_drawHair)
+		{
+			shader_hairstroke->use_program();
+			for (int i = 0; i < hmsh_vtx_offset.size() - 1; i++)
+			{
+				int patchSize = hmsh_vtx_offset[i + 1] - hmsh_vtx_offset[i];
+				if (patchSize <= 4)
+				{
+					continue;
+				}
+				glPatchParameteri(GL_PATCH_VERTICES, patchSize);
+				glDrawArrays(GL_PATCHES, hmsh_vtx_offset[i], patchSize);
+			}
+		}
 		shader_sel_layer->unuse();
 	}
 	glBindVertexArray(0);
@@ -365,11 +396,6 @@ void OGLViewer::resizeGL(int w, int h)
 	view_cam->resizeViewport(width() / static_cast<double>(height()));
 	view_cam->setResolution(width(), height());
 	view_cam->exportVBO(nullptr, proj_mat, nullptr);
-	glViewport(0, 0, width(), height());
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 }
 void OGLViewer::generateHairCage()
 {
@@ -385,14 +411,7 @@ void OGLViewer::generateHairCage()
 
 		bindHairMesh();
 
-		cout << "color:" << endl;
-		for (int i = 0; i < hmsh_colors.size() ;)
-		{
-			cout << "\t" << hmsh_colors[i++];
-			cout << "\t" << hmsh_colors[i++];
-			cout << "\t" << hmsh_colors[i++] << endl;
-		}
-		cout << endl;
+		emit echoHint(tr("Ctrl+E to extrude from current mesh."));
 	}
 }
 void OGLViewer::keyPressEvent(QKeyEvent *e)
@@ -507,8 +526,13 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	}
 	case Qt::Key_Up:
 	{
-		curLayerID = min(++curLayerID, hairMesh->sizeAtStroke(curStrokeID));
-		cout << "Layer: " << curLayerID << endl;
+		if (!hairMesh->empty())
+		{
+			curLayerID++;
+			curLayerID = min(curLayerID, hairMesh->sizeAtStroke(curStrokeID));
+			cout << "Layer: " << curLayerID << endl;
+		}
+		
 		break;
 	}
 	case Qt::Key_Down:

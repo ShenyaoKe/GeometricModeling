@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>../../icons/arrowLeft.png</file>
+    <file>../../icons/arrowRight.png</file>
     <file>../../icons/arrowDown.png</file>
     <file>../../icons/arrowUp.png</file>
     <file>../../icons/dropArrow.png</file>
