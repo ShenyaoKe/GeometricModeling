@@ -10,7 +10,7 @@ layout(triangle_strip, max_vertices = 5) out;
 uniform mat4 proj_matrix;
 in vec2 uv_te[];
 //in vec4 T_te[];
-in vec4 B_te[];
+//in vec4 B_te[];
 
 out vec2 uv_gs;
 uniform float pointsize = 0.02;

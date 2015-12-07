@@ -94,7 +94,9 @@ private:// OpenGL variables
 	int m_lastMousePos[2];
 	int m_selectMode;
 	int display_mode = 0;
-	int m_drawHair;
+	bool m_drawHairMesh;
+	bool m_drawHairCurve;
+	bool m_drawHairMeshWireframe;
 private: //Scene data
 	HDS_Mesh* charMesh;
 	vector<GLfloat> char_verts;

@@ -2,8 +2,9 @@
 
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
-	, m_selectMode(OBJECT_SELECT), m_Select(-1)
-	, curStrokeID(-1), curLayerID(-1)
+	, m_selectMode(OBJECT_SELECT)
+	, m_drawHairMesh(true), m_drawHairCurve(true), m_drawHairMeshWireframe(false)
+	, m_Select(-1), curStrokeID(-1), curLayerID(-1)
 	, hair_mesh_opacity(1.0)
 {
 	// Set surface format for current widget
@@ -24,7 +25,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 
 	// Read obj file
 #ifdef _DEBUG
-	charMesh = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+	charMesh = new HDS_Mesh("../../scene/obj/head.obj");
 #else
 	charMesh = new HDS_Mesh("quad_cube.obj");
 #endif
@@ -42,7 +43,7 @@ OGLViewer::~OGLViewer()
 }
 void OGLViewer::resetCamera()
 {
-	Transform cam2w = lookAt(Point3D(10, 6, 10), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
+	Transform cam2w = lookAt(Point3D(20, 16, 20), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
 	Transform pers = Transform(setPerspective(67,
 		width() / static_cast<double>(height()), 0.1, 100));
 	view_cam = new perspCamera(cam2w, pers);
@@ -127,13 +128,13 @@ void OGLViewer::initShader()
 
 	// Hair Strands Shader
 	shader_hairstroke = new GLSLProgram("hairstroke_vs.glsl", "hairstroke_fs.glsl",
-		"hairstroke_gs.glsl", "hairstroke_tc.glsl", "hairstroke_te.glsl");
-	shader_layer_uid->add_uniformv("view_matrix");
-	shader_layer_uid->add_uniformv("proj_matrix");
-	shader_layer_uid->add_uniformv("degree");
-	shader_layer_uid->add_uniformv("segments");
-	shader_layer_uid->add_uniformv("NumStrips");
-	shader_layer_uid->add_uniformv("pointsize");
+		nullptr, "hairstroke_tc.glsl", "hairstroke_te.glsl");
+	shader_hairstroke->add_uniformv("view_matrix");
+	shader_hairstroke->add_uniformv("proj_matrix");
+	shader_hairstroke->add_uniformv("degree");
+	shader_hairstroke->add_uniformv("segments");
+	shader_hairstroke->add_uniformv("NumStrips");
+	shader_hairstroke->add_uniformv("pointsize");
 }
 
 GLuint OGLViewer::bindCharacter()
@@ -321,30 +322,36 @@ void OGLViewer::paintGL()
 		/************************************************************************/
 		/* Draw Hair Mesh                                                       */
 		/************************************************************************/
-		shader_hairmesh->use_program();
-
-		glUniform1f((*shader_hairmesh)("opacity"), hair_mesh_opacity);
-		glUniformMatrix4fv((*shader_hairmesh)("view_matrix"), 1, GL_FALSE, view_mat);
-		glUniformMatrix4fv((*shader_hairmesh)("proj_matrix"), 1, GL_FALSE, proj_mat);
-
-		for (int i = 0; i < hmsh_idx_offset.size() - 1; i++)
+		if (m_drawHairMesh)
 		{
-			glUniform3fv((*shader_hairmesh)("color"), 1, &hmsh_colors[i * 3]);
-			glUniform1i((*shader_hairmesh)("selected"), curStrokeID == i);
-			glDrawElements(GL_LINES_ADJACENCY,
-				hmsh_idx_offset[i + 1] - hmsh_idx_offset[i],
-				GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * hmsh_idx_offset[i]));
-		}
+			shader_hairmesh->use_program();
 
+			glUniform1f((*shader_hairmesh)("opacity"), hair_mesh_opacity);
+			glUniformMatrix4fv((*shader_hairmesh)("view_matrix"), 1, GL_FALSE, view_mat);
+			glUniformMatrix4fv((*shader_hairmesh)("proj_matrix"), 1, GL_FALSE, proj_mat);
+
+			for (int i = 0; i < hmsh_idx_offset.size() - 1; i++)
+			{
+				glUniform3fv((*shader_hairmesh)("color"), 1, &hmsh_colors[i * 3]);
+				glUniform1i((*shader_hairmesh)("selected"), curStrokeID == i);
+				glDrawElements(GL_LINES_ADJACENCY,
+					hmsh_idx_offset[i + 1] - hmsh_idx_offset[i],
+					GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * hmsh_idx_offset[i]));
+			}
+		}
+		
 		/************************************************************************/
 		/* Draw Hair Mesh Wireframe                                             */
 		/************************************************************************/
-		glLineWidth(1);
-		shader_wireframe->use_program();
-		glUniformMatrix4fv((*shader_wireframe)("view_matrix"), 1, GL_FALSE, view_mat);
-		glUniformMatrix4fv((*shader_wireframe)("proj_matrix"), 1, GL_FALSE, proj_mat);
-		glDrawElements(GL_LINES_ADJACENCY, hmsh_idxs.size(), GL_UNSIGNED_INT, 0);
-
+		
+		if (m_drawHairMeshWireframe)
+		{
+			glLineWidth(1);
+			shader_wireframe->use_program();
+			glUniformMatrix4fv((*shader_wireframe)("view_matrix"), 1, GL_FALSE, view_mat);
+			glUniformMatrix4fv((*shader_wireframe)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glDrawElements(GL_LINES_ADJACENCY, hmsh_idxs.size(), GL_UNSIGNED_INT, 0);
+		}
 
 		/************************************************************************/
 		/* Draw Selected Hair Mesh Layer                                        */
@@ -361,12 +368,20 @@ void OGLViewer::paintGL()
 			glUniformMatrix4fv((*shader_sel_layer)("proj_matrix"), 1, GL_FALSE, proj_mat);
 			glDrawArrays(GL_LINES_ADJACENCY, startID, 4);
 		}
-		if (m_drawHair)
+		/************************************************************************/
+		/* Draw Hair Curves                                                     */
+		/************************************************************************/
+		if (m_drawHairCurve)
 		{
+			glLineWidth(1);
+
 			shader_hairstroke->use_program();
+			glUniformMatrix4fv((*shader_hairstroke)("view_matrix"), 1, GL_FALSE, view_mat);
+			glUniformMatrix4fv((*shader_hairstroke)("proj_matrix"), 1, GL_FALSE, proj_mat);
 			for (int i = 0; i < hmsh_vtx_offset.size() - 1; i++)
 			{
 				int patchSize = hmsh_vtx_offset[i + 1] - hmsh_vtx_offset[i];
+				cout << "Patch size: " << patchSize << endl;
 				if (patchSize <= 4)
 				{
 					continue;
@@ -524,7 +539,22 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		//bindHairMesh();
 		break;
 	}
-	case Qt::Key_Up:
+	case Qt::Key_1:
+	{
+		m_drawHairMesh = !m_drawHairMesh;
+		break;
+	}
+	case Qt::Key_2:
+	{
+		m_drawHairMeshWireframe = !m_drawHairMeshWireframe;
+		break;
+	}
+	case Qt::Key_3:
+	{
+		m_drawHairCurve = !m_drawHairCurve;
+		break;
+	}
+	/*case Qt::Key_Up:
 	{
 		if (!hairMesh->empty())
 		{
@@ -552,7 +582,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		curStrokeID = max(--curStrokeID, 0);
 		cout << "Stroke: " << curStrokeID << endl;
 		break;
-	}
+	}*/
 	default:
 	{
 		QOpenGLWidget::keyPressEvent(e);

@@ -1,11 +1,9 @@
-#version 430
-in vec3 vp;
-/*uniform mat4 model_matrix; // ModelToWorld matrix
-uniform mat4 view_matrix; // WorldToCamera matrix
-uniform mat4 proj_matrix; // Projection matrix
-*/
-uniform mat4 proj_matrix;
+#version 440
+in layout(location = 0) vec3 vp;
 
-void main () {
-	gl_Position = proj_matrix * vec4(vp, 1.0);
+//uniform mat4 view_matrix, proj_matrix;
+
+void main()
+{
+	gl_Position = vec4(vp, 1.0);
 }
