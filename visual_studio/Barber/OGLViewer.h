@@ -18,7 +18,7 @@
 #include "Math/MathUtil.h"
 #include "Image/ImageData.h"
 #include "Geometry/Mesh.h"
-//#include "Math/Matrix4D.h"
+#include "Math/Matrix4D.h"
 #include "Camera/Camera.h"
 #include "hds_mesh.h"
 #include "HairMesh.h"
@@ -51,6 +51,19 @@ public:
 		STROKE_SELECT,
 		LAYER_SELECT
 	};
+	enum Operation_Mode
+	{
+		OP_NULL,
+		OP_TRANSLATE,
+		OP_ROTATE,
+		OP_SCALE
+	};
+	enum Operation_Axis
+	{
+		OP_Z_AXIS = 0,
+		OP_Y_AXIS = 1,
+		OP_X_AXIS = 2
+	};
 	//OGLViewer();
 	OGLViewer(QWidget *parent = nullptr);
 	~OGLViewer();
@@ -76,6 +89,10 @@ private:
 	void saveFrameBuffer();
 
 	void generateHairCage();
+	void extrude(double val);
+
+	void openHMS(const QString &filename);
+	void exportHMS(const QString &filename) const;
 signals:
 	void echoHint(const QString &);
 public:
@@ -93,6 +110,8 @@ private:// OpenGL variables
 	QTime process_time;
 	int m_lastMousePos[2];
 	int m_selectMode;
+	int m_operationMode;
+	int m_operationAxis;
 	int display_mode = 0;
 	bool m_drawHairMesh;
 	bool m_drawHairCurve;
@@ -115,6 +134,9 @@ private: //Scene data
 	GLuint hmsh_elb;
 	GLuint hmsh_vao;
 
+	QColor hairRootColor = QColor(0x502800);
+	QColor hairTipColor = QColor(0xFFFAC4);
+	QColor hairScatterColor;
 	GLfloat hair_mesh_opacity;
 
 	int curLayerID;

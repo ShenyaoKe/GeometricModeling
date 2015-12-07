@@ -3,28 +3,59 @@ layout(isolines) in;
 
 uniform mat4 view_matrix, proj_matrix;
 
-uniform int degree = 2;
-uniform int n_layer = 2;
+uniform int nLayer;
 patch in int vertCount;
-out vec2 uv;
-vec4 root, tip;
-vec4 lerp(int ly, int offset, float u)
+patch in int gridSample;
+out vec3 uvw;
+
+vec4 p[4];// Control points
+
+vec4 posAtLayer(int layer, float s, float t)
 {
-	int sID = ly * 4;
-	return mix(root, tip, u);
+	int idx = layer * 4;
+
+	return mix(
+		mix(gl_in[idx].gl_Position, gl_in[idx + 1].gl_Position, s),
+		mix(gl_in[idx + 3].gl_Position, gl_in[idx + 2].gl_Position, s),
+		t);
+}
+float rand(vec2 co)
+{
+	return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+vec4 blossomCatmullRom(float t)
+{
+	// Catmull-Rom Spline
+	t = t + 1; // 1: degree - 1 = 2 - 1
+
+	// Lagrange
+	// Degree: 2
+	for (int j = 0; j < 2; j++)
+	{
+		for (int i = 0; i < 3 - j; i++)
+		{
+			p[i] = p[i] * (i + j + 1 - t) / float(j + 1)
+				+ p[i + 1] * (t - i) / float(j + 1);
+		}
+	}
+	//de Boor
+	return p[0] * (2 - t) + p[1] * (t - 1);
 }
 void main()
 {
-	// Catmull-Rom Spline
-	//float t = gl_TessCoord.x + degree - 1;
-	//vec3 p[gl_MaxPatchVertices];
 
 	float u = gl_TessCoord.x;// (n_layer - 1) * t;
 	float v = gl_TessCoord.y;
-	uv = gl_TessCoord.xy;
-	float s = sqrt(v);
-	float t = sqrt(1 - v);
-	int tipLyLoc = vertCount - 4;
+	// Sample on grid
+	int gridSampleSq = gridSample * gridSample;
+	int planar_index = int(v * gridSampleSq);
+	float si = float(planar_index % gridSample) + rand(vec2(v, v));
+	float ti = float(planar_index / gridSample) + rand(vec2(v, v));
+	float s = si / float(gridSample);
+	float t = ti / float(gridSample);
+
+	uvw = vec3(s, t, u);
+	/*int tipLyLoc = vertCount - 4;
 	root = mix(
 		mix(gl_in[0].gl_Position, gl_in[1].gl_Position, s),
 		mix(gl_in[2].gl_Position, gl_in[3].gl_Position, 1 - s),
@@ -37,29 +68,22 @@ void main()
 	int ly = 0;// int(u);
 	gl_Position =  lerp(ly, offset, u);
 	gl_Position = proj_matrix * view_matrix * gl_Position;
+	*/
+
 	// Catmull-Rom Blossom
-	/*for (int i = 0; i < 2 * degree; i++)
-	{
-		p[i] = gl_in[i].gl_Position.xyz;
-	}
-	// Lagrange
-	for (int j = 0; j < degree; j++)
-	{
-		for (int i = 0; i < 2 * degree - j - 1; i++)
-		{
-			p[i] = p[i] * (i + j + 1 - t) / (j + 1)
-				+ p[i + 1] * (t - i) / (j + 1);
-		}
-	}
-	//de Boor
-	for (int j = 0; j < degree - 1; j++)
-	{
-		int dem = degree - j - 1;
-		for (int i = 0; i < dem; i++)
-		{
-			p[i] = p[i] * (i + degree - t) / dem
-				+ p[i + 1] * (t - i - j - 1) / dem;
-		}
-	}*/
-	//gl_Position = vec4(p[0], 1.0);
+	float cvT = u * float(nLayer - 1);
+	int iLayer = int(cvT);
+	int jLayer = iLayer + 1;
+	int prevLayer = iLayer - 1;
+	int nextLayer = jLayer + 1;
+	p[1] = posAtLayer(iLayer, s, t);
+	p[2] = posAtLayer(jLayer, s, t);
+	p[0] = prevLayer < 0 ? p[1] : posAtLayer(prevLayer, s, t);
+	p[3] = nextLayer >= nLayer ? p[2] : posAtLayer(nextLayer, s, t);
+	
+	cvT -= iLayer;
+	
+	gl_Position = proj_matrix * view_matrix * blossomCatmullRom(cvT);
+	
+	//gl_Position = proj_matrix * view_matrix * mix(p[1], p[2], cvT);
 }

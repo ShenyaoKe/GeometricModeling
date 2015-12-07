@@ -1,18 +1,21 @@
 #include "hairMesh.h"
 
 
-LayeredHairMesh::LayeredHairMesh(const HDS_Face* src)
+LayeredHairMesh::LayeredHairMesh(const HDS_Face* src, bool deepSet)
 	: root(src)
 	, vertice(src->corners())
 	//, color(rand() % 256, rand() % 256, rand() % 256)
 {
 	seg = vertice.size();
-	for (auto v : vertice)
+	if (deepSet)
 	{
-		points.push_back(v->pos);
+		for (auto v : vertice)
+		{
+			points.push_back(v->pos);
+		}
+		color.setHsv(rand() % 360, 180, 255);
 	}
-
-	color.setHsv(rand() % 360, 180, 255);
+	
 }
 
 LayeredHairMesh::~LayeredHairMesh()
@@ -22,9 +25,58 @@ LayeredHairMesh::~LayeredHairMesh()
 	points.clear();
 }
 
-HairMesh::HairMesh(const HDS_Mesh* src)
+HairMesh::HairMesh(const HDS_Mesh* src, const char *filename)
 	: ref_mesh(src)
 {
+	if (filename == nullptr)
+	{
+		return;
+	}
+	// Load from file
+	FILE *HMS_File;
+	errno_t err = fopen_s(&HMS_File, filename, "r");
+	if (err)
+	{
+		printf("Can't read file %s!\n", filename);
+		return;
+	}
+	float x, y, z;
+	int fid;
+	LayeredHairMesh* curLayer = nullptr;
+	while (true)
+	{
+		char lineHeader[128];
+		int res = fscanf_s(HMS_File, "%s", &lineHeader, _countof(lineHeader));
+		if (res == EOF)
+		{
+			break;
+		}
+		if (strcmp(lineHeader, "L") == 0)
+		{
+			fscanf_s(HMS_File, " F%d\n", &fid);
+			LayeredHairMesh* layer = new LayeredHairMesh(ref_mesh->faceMap.at(fid), false);
+			curLayer = layer;
+			layers.push_back(layer);
+		}
+		else if (strcmp(lineHeader, "c") == 0)
+		{
+			char color_str[8];
+			fscanf_s(HMS_File, " %s\n", &color_str, _countof(color_str));
+			curLayer->color = QColor(color_str);
+		}
+		else if (strcmp(lineHeader, "v") == 0)
+		{
+
+			fscanf_s(HMS_File, " %f %f %f\n", &x, &y, &z);
+			curLayer->points.push_back(QVector3D(x, y, z));
+		}
+		else//if (strcmp(lineHeader, "#") == 0)
+		{
+			char stupidBuffer[1000];
+			fgets(stupidBuffer, 1000, HMS_File);
+		}
+	}
+	fclose(HMS_File);
 }
 
 HairMesh::~HairMesh()
@@ -50,6 +102,35 @@ int HairMesh::sizeAtStroke(int i) const
 bool HairMesh::empty() const
 {
 	return layers.size() == 0;
+}
+
+void HairMesh::save(const char* filename) const
+{
+	FILE *HMS_File;
+	errno_t err = fopen_s(&HMS_File, filename, "w");
+	if (err)
+	{
+		printf("Can't write to file %s!\n", filename);
+		return;
+	}
+	fprintf(HMS_File, "#Hair Mesh\n");
+	for (int i = 0; i < layers.size(); i++)
+	{
+		auto curLayer = layers[i];
+		// Write stroke ref face id
+		fprintf(HMS_File, "L F%d\n", curLayer->root->index);
+
+		//Write stroke colors
+		fprintf(HMS_File, "c %s\n", curLayer->color.name().toStdString().c_str());
+
+		for (int i = 0; i < curLayer->points.size(); i++)
+		{
+			auto& curPt = curLayer->points[i];
+			fprintf(HMS_File, "v %f %f %f\n", curPt.x(), curPt.y(), curPt.z());
+		}
+	}
+
+	fclose(HMS_File);
 }
 
 void HairMesh::exportIndexedVBO(
@@ -121,7 +202,7 @@ void LayeredHairMesh::extrude(double val)
 	}
 }
 
-void LayeredHairMesh::shrink(int lv, double scale)
+void LayeredHairMesh::translate(int lv, const QVector3D &dir, int mode)
 {
 	if (lv < 1)
 	{
@@ -130,20 +211,13 @@ void LayeredHairMesh::shrink(int lv, double scale)
 	lv = min(lv, (int)points.size() / seg - 1);
 	lv *= seg;
 
-	QVector3D center;
 	for (int i = lv; i < lv + seg; i++)
 	{
-		center += points[i];
-	}
-	center /= seg;
-		
-	for (int i = lv; i < lv + seg; i++)
-	{
-		points[i] = (points[i] - center) * scale + center;
+		points[i] += dir;
 	}
 }
 
-void LayeredHairMesh::twist(int lv, double angle)
+void LayeredHairMesh::scale(int lv, double xval, double yval, double zval)
 {
 	if (lv < 1)
 	{
@@ -160,9 +234,60 @@ void LayeredHairMesh::twist(int lv, double angle)
 	center /= seg;
 	QVector3D normal = QVector3D::crossProduct(
 		points[lv] - center, points[lv + 1] - center).normalized();
-	QMatrix4x4 rot;
-	rot.rotate(angle, normal);
+	QVector3D dx = (points[lv + 1] - points[lv]).normalized();
+	QVector3D dy = QVector3D::crossProduct(normal, dx);
 
+	for (int i = lv; i < lv + seg; i++)
+	{
+		points[i] = QVector3D::dotProduct(points[i] - center, dx) * yval * dx
+			+ QVector3D::dotProduct(points[i] - center, dy) * xval * dy
+			+ QVector3D::dotProduct(points[i] - center, normal) * xval * normal
+			+ center;
+	}
+}
+
+void LayeredHairMesh::rotate(int lv, double val, int mode)
+{
+	if (lv < 1)
+	{
+		return;
+	}
+	lv = min(lv, (int)points.size() / seg - 1);
+	lv *= seg;
+
+	QMatrix4x4 rot;
+	QVector3D center;
+	for (int i = lv; i < lv + seg; i++)
+	{
+		center += points[i];
+	}
+	center /= seg;
+	QVector3D normal = QVector3D::crossProduct(
+		points[lv] - center, points[lv + 1] - center).normalized();
+	QVector3D dx = (points[lv + 1] - points[lv]).normalized();
+	QVector3D dy = QVector3D::crossProduct(normal, dx);
+	switch (mode)
+	{
+	case 0:// normal
+	{
+
+		rot.rotate(val, normal);
+		break;
+	}
+	case 1:// Y dir
+	{
+		rot.rotate(val, dy);
+		break;
+	}
+	case 2:// Y dir
+	{
+		rot.rotate(val, dx);
+		break;
+	}
+	default:
+		break;
+	}
+	
 	for (int i = lv; i < lv + seg; i++)
 	{
 		points[i] = rot * (points[i] - center) + center;

@@ -7,8 +7,8 @@ in vec3 pos_eye, norm_eye;
 in float cosTheta;
 
 
-uniform vec3 Kd = vec3(0.6, 0.72, 0.8);
-uniform vec3 La = vec3(0.1, 0.1, 0.1); // grey ambient colour
+uniform vec3 Kd = vec3(1.0, 0.925, 0.84);
+uniform vec3 La = vec3(0.46, 0.235, 0.18); // grey ambient colour
 uniform vec3 white = vec3(1, 1, 1);
 // fixed point light properties
 uniform vec3 light_pos = vec3(0, 0, 0);
@@ -30,7 +30,7 @@ void main()
 
 	if (gl_PrimitiveID == sel_id)
 	{
-		frag_color = mix(frag_color, vec4(1, 0.6, 0.35, 1), 0.5);
+		frag_color = mix(frag_color, vec4(0, 0.6, 0.35, 1), 0.5);
 	}
 
 }

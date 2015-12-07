@@ -3,7 +3,7 @@
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, m_selectMode(OBJECT_SELECT)
-	, m_drawHairMesh(true), m_drawHairCurve(true), m_drawHairMeshWireframe(false)
+	, m_drawHairMesh(false), m_drawHairCurve(true), m_drawHairMeshWireframe(true)
 	, m_Select(-1), curStrokeID(-1), curLayerID(-1)
 	, hair_mesh_opacity(1.0)
 {
@@ -131,10 +131,13 @@ void OGLViewer::initShader()
 		nullptr, "hairstroke_tc.glsl", "hairstroke_te.glsl");
 	shader_hairstroke->add_uniformv("view_matrix");
 	shader_hairstroke->add_uniformv("proj_matrix");
-	shader_hairstroke->add_uniformv("degree");
+	shader_hairstroke->add_uniformv("nLayer");
 	shader_hairstroke->add_uniformv("segments");
 	shader_hairstroke->add_uniformv("NumStrips");
 	shader_hairstroke->add_uniformv("pointsize");
+	shader_hairstroke->add_uniformv("rootColor");
+	shader_hairstroke->add_uniformv("tipColor");
+	shader_hairstroke->add_uniformv("scatterColor");
 }
 
 GLuint OGLViewer::bindCharacter()
@@ -233,7 +236,7 @@ void OGLViewer::renderUidBuffer()
 		{
 			if (curStrokeID < 0)
 			{
-				echoHint(tr("Select Stroke first!"));
+				emit echoHint(tr("Select Stroke first!"));
 			}
 			else
 			{
@@ -241,7 +244,7 @@ void OGLViewer::renderUidBuffer()
 				glUniform1i((*shader_layer_uid)("mode"), m_selectMode);
 				glUniformMatrix4fv((*shader_layer_uid)("view_matrix"), 1, GL_FALSE, view_mat);
 				glUniformMatrix4fv((*shader_layer_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
-				glLineWidth(10);
+				glLineWidth(20);
 				glDrawArrays(GL_LINES_ADJACENCY, hmsh_vtx_offset[curStrokeID],
 					hmsh_idx_offset[curStrokeID + 1] - hmsh_idx_offset[curStrokeID]);
 			}
@@ -378,14 +381,18 @@ void OGLViewer::paintGL()
 			shader_hairstroke->use_program();
 			glUniformMatrix4fv((*shader_hairstroke)("view_matrix"), 1, GL_FALSE, view_mat);
 			glUniformMatrix4fv((*shader_hairstroke)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glUniform1ui((*shader_hairstroke)("rootColor"), hairRootColor.rgb());
+			glUniform1ui((*shader_hairstroke)("tipColor"), hairTipColor.rgb());
+			glUniform1ui((*shader_hairstroke)("scatterColor"), hairScatterColor.rgb());
 			for (int i = 0; i < hmsh_vtx_offset.size() - 1; i++)
 			{
 				int patchSize = hmsh_vtx_offset[i + 1] - hmsh_vtx_offset[i];
-				cout << "Patch size: " << patchSize << endl;
 				if (patchSize <= 4)
 				{
 					continue;
 				}
+				//cout << "layer size : " << patchSize / 4 << endl;
+				glUniform1i((*shader_hairstroke)("nLayer"), patchSize / 4);
 				glPatchParameteri(GL_PATCH_VERTICES, patchSize);
 				glDrawArrays(GL_PATCHES, hmsh_vtx_offset[i], patchSize);
 			}
@@ -429,6 +436,38 @@ void OGLViewer::generateHairCage()
 		emit echoHint(tr("Ctrl+E to extrude from current mesh."));
 	}
 }
+
+void OGLViewer::extrude(double val)
+{
+	if (!hairMesh->empty() && curStrokeID >= 0)
+	{
+		auto curLayer = hairMesh->layers[curStrokeID];
+		curLayer->extrude(val);
+		hairMesh->exportIndexedVBO(
+			&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+		emit echoHint(tr("Extruded by %lf").arg(val));
+		update();
+	}
+	
+}
+void OGLViewer::openHMS(const QString &filename)
+{
+	if (filename == "")
+	{
+		return;
+	}
+	delete hairMesh;
+	hairMesh = new HairMesh(charMesh, filename.toUtf8().constData());
+	hairMesh->exportIndexedVBO(
+		&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+	update();
+}
+
+void OGLViewer::exportHMS(const QString &filename) const
+{
+	hairMesh->save(filename.toUtf8().constData());
+}
+
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
 	switch (e->key())
@@ -468,19 +507,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		//bindCharacter();
 		break;
 	}
-	case Qt::Key_E:
-	{
-
-		if (e->modifiers() == Qt::ControlModifier)
-		{
-			auto curLayer = hairMesh->layers[curStrokeID];
-			curLayer->extrude(5);
-			hairMesh->exportIndexedVBO(
-				&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
-			//bindHairMesh();
-		}
-		break;
-	}
+	
 	case Qt::Key_Delete:
 	{
 		if (curStrokeID >= 0)
@@ -503,7 +530,37 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 		}
 		break;
 	}
-	case Qt::Key_W://scale
+	case Qt::Key_Q://NULL
+	{
+		m_operationMode = OP_NULL;
+		m_operationAxis = OP_Z_AXIS;
+		break;
+	}
+	case Qt::Key_W:
+	{
+		m_operationMode = OP_TRANSLATE;
+		m_operationAxis = OP_Z_AXIS;
+		break;
+	}
+	case Qt::Key_E://scale
+	{
+		m_operationMode = OP_ROTATE;
+		m_operationAxis = OP_Z_AXIS;
+		break;
+	}
+	case Qt::Key_R://scale
+	{
+		m_operationMode = OP_SCALE;
+		m_operationAxis = OP_Z_AXIS;
+		break;
+	}
+	case Qt::Key_T://scale
+	{
+		m_operationAxis++;
+		m_operationAxis %= 3;
+		break;
+	}
+	/*case Qt::Key_W://scale
 	{
 		auto curLayer = hairMesh->layers[curStrokeID];
 		curLayer->shrink(curLayerID, 1.2);
@@ -515,7 +572,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	case Qt::Key_S://scale
 	{
 		auto curLayer = hairMesh->layers[curStrokeID];
-		curLayer->shrink(curLayerID, 0.8);
+		curLayer->scale(curLayerID, 0.8, m_operationAxis);
 		hairMesh->exportIndexedVBO(
 			&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
 		//bindHairMesh();
@@ -538,7 +595,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 			&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
 		//bindHairMesh();
 		break;
-	}
+	}*/
 	case Qt::Key_1:
 	{
 		m_drawHairMesh = !m_drawHairMesh;
@@ -617,30 +674,151 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 {
 	int dx = e->x() - m_lastMousePos[0];
 	int dy = e->y() - m_lastMousePos[1];
+	double scale_unit = 1.0 / static_cast<double>(height());
 
 	//printf("dx: %d, dy: %d\n", dx, dy);
 
-	if ((e->buttons() == Qt::LeftButton) && (e->modifiers() == Qt::AltModifier))
+	switch (e->modifiers())
 	{
-		view_cam->rotate(dy * 0.25, -dx * 0.25, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if ((e->buttons() == Qt::RightButton) && (e->modifiers() == Qt::AltModifier))
+	case Qt::AltModifier:
 	{
-		if (dx != e->x() && dy != e->y())
+		if (e->buttons() == Qt::LeftButton)
 		{
-			view_cam->zoom(0.0, 0.0, dx * 0.05);
+			view_cam->rotate(dy * 0.25, -dx * 0.25, 0.0);
 			view_cam->exportVBO(view_mat, nullptr, nullptr);
 		}
-	}
-	else if ((e->buttons() == Qt::MidButton) && (e->modifiers() == Qt::AltModifier))
-	{
-		if (dx != e->x() && dy != e->y())
+		else if (e->buttons() == Qt::RightButton)
 		{
-			view_cam->zoom(dx * 0.05, dy * 0.05, 0.0);
-			view_cam->exportVBO(view_mat, nullptr, nullptr);
+			if (dx != e->x() && dy != e->y())
+			{
+				view_cam->zoom(0.0, 0.0, dx * 0.05);
+				view_cam->exportVBO(view_mat, nullptr, nullptr);
+			}
 		}
+		else if (e->buttons() == Qt::MidButton)
+		{
+			if (dx != e->x() && dy != e->y())
+			{
+				view_cam->zoom(dx * 0.05, dy * 0.05, 0.0);
+				view_cam->exportVBO(view_mat, nullptr, nullptr);
+			}
+		}
+		break;
 	}
+	case Qt::NoModifier:
+	{
+		if (e->buttons() == Qt::LeftButton)
+		{
+			switch (m_operationMode)
+			{
+			case OP_NULL:
+				break;
+
+			case OP_TRANSLATE:
+			{
+				if (hairMesh->empty() || curStrokeID < 0 || curLayerID < 1)
+				{
+					break;
+				}
+				QVector4D vec = QMatrix4x4(view_mat) * QVector4D(-dx, -dy, 0, 0);
+				auto curLayer = hairMesh->layers[curStrokeID];
+				curLayer->translate(curLayerID,
+					vec.toVector3D() * scale_unit * 10, m_operationAxis);
+				hairMesh->exportIndexedVBO(
+					&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+				//bindHairMesh();
+				break;
+			}
+			case OP_ROTATE:
+			{
+
+				if (hairMesh->empty() || curStrokeID < 0 || curLayerID < 1)
+				{
+					break;
+				}
+				auto curLayer = hairMesh->layers[curStrokeID];
+				// rotate around normal
+				curLayer->rotate(curLayerID, -dx * 0.1, OP_Y_AXIS);
+				curLayer->rotate(curLayerID, -dy * 0.1, OP_X_AXIS);
+				hairMesh->exportIndexedVBO(
+					&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+				break;
+			}
+			case OP_SCALE:
+			{
+				if (hairMesh->empty() || curStrokeID < 0 || curLayerID < 1)
+				{
+					break;
+				}
+				auto curLayer = hairMesh->layers[curStrokeID];
+				// rotate around normal
+				curLayer->scale(curLayerID, 1.0 - dy * scale_unit, 1.0 + dx * scale_unit, 1.0);
+				hairMesh->exportIndexedVBO(
+					&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		else if (e->buttons() == Qt::RightButton)
+		{
+			switch (m_operationMode)
+			{
+			case OP_NULL:
+				break;
+
+			case OP_TRANSLATE:
+			{
+				/*if (hairMesh->empty() || curStrokeID < 0 || curLayerID < 1)
+				{
+					break;
+				}
+				QVector4D vec = QMatrix4x4(view_mat) * QVector4D(-dx, -dy, 0, 0);
+				auto curLayer = hairMesh->layers[curStrokeID];
+				curLayer->translate(curLayerID, vec.toVector3D() * 0.1, m_operationAxis);
+				hairMesh->exportIndexedVBO(
+					&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+				//bindHairMesh();
+				break;*/
+				break;
+			}
+			case OP_ROTATE:
+			{
+				if (hairMesh->empty() || curStrokeID < 0 || curLayerID < 1)
+				{
+					break;
+				}
+				auto curLayer = hairMesh->layers[curStrokeID];
+				// rotate around normal
+				curLayer->rotate(curLayerID, -dx * 0.1, OP_Z_AXIS);
+				hairMesh->exportIndexedVBO(
+					&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+				break;
+			}
+			case OP_SCALE:
+			{
+				if (hairMesh->empty() || curStrokeID < 0 || curLayerID < 1)
+				{
+					break;
+				}
+				auto curLayer = hairMesh->layers[curStrokeID];
+				// rotate around normal
+				curLayer->scale(curLayerID, 1.0, 1.0, 1.0 + (-dy + dx) * scale_unit);
+				hairMesh->exportIndexedVBO(
+					&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	
 	/*else
 	{
 	QOpenGLWidget::mouseMoveEvent(e);

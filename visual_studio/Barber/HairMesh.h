@@ -8,12 +8,12 @@
 class LayeredHairMesh
 {
 public:
-	LayeredHairMesh(const HDS_Face* src);
+	LayeredHairMesh(const HDS_Face* src, bool deepSet = true);
 	~LayeredHairMesh();
 	void extrude(double val);
-	void translate(int val);
-	void shrink(int lv, double scale);
-	void twist(int lv, double angle);
+	void translate(int lv, const QVector3D &dir, int mode = 0);
+	void scale(int lv, double xval, double yval, double zval);
+	void rotate(int lv, double angle, int mode = 0);
 	void remove(int lv);
 
 	void exportIndexedVBO(int offset = 0,
@@ -33,11 +33,12 @@ private:
 class HairMesh
 {
 public:
-	HairMesh(const HDS_Mesh* src);
+	HairMesh(const HDS_Mesh* src, const char *filename = nullptr);
 	~HairMesh();
 	void push_back(LayeredHairMesh* layer);
 	int sizeAtStroke(int i) const;
 	bool empty() const;
+	void save(const char* filename) const;
 	void exportIndexedVBO(
 		vector<float>* vtx_array = nullptr,
 		vector<uint>* idx_array = nullptr,
