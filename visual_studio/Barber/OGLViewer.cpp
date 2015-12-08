@@ -26,7 +26,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 
 	// Read obj file
 #ifdef _DEBUG
-	charMesh = new HDS_Mesh("../../scene/obj/head.obj");
+	charMesh = new HDS_Mesh("../../scene/obj/head2.obj");
 	collisionMesh = new Mesh("../../scene/obj/head_tri.obj");
 #else
 	charMesh = new HDS_Mesh("head.obj");

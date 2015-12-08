@@ -430,7 +430,7 @@ void LayeredHairMesh::internalUpdate(vector<QVector3D> &state)
 vector<QVector3D> LayeredHairMesh::internalForces(const vector<QVector3D> &state) const
 {
 	vector<QVector3D> ifs(state.size(), QVector3D());
-	float ks(5), kd(2), ko(5);
+	float ks(5), kd(2), ko(1);
 	int compSize = state.size() / 2;
 	float lenSeg = compSize / seg;
 	for (int i = 4; i < compSize; i ++)
@@ -471,10 +471,12 @@ void LayeredHairMesh::collisionDetect(vector<QVector3D> &state)
 		double pathLen = dir.length();
 		dir /= pathLen;
 		
-		/*if ((nextPos - sphere).lengthSquared() < radSq)
+		if ((nextPos - sphere).lengthSquared() < radSq)
 		{
-			state[i] = (nextPos - sphere) * 2 + sphere;
-		}*/
+			auto norm = (nextPos - sphere).normalized();
+			state[i] = norm * radius * 1.01 + sphere;
+			state[i + compSize] -= QVector3D::dotProduct(norm, state[i + compSize]) * 2 * norm;
+		}
 		/*Ray inray(Point3D(curPos.x(), curPos.y(), curPos.z()), Point3D(dir.x(), dir.y(), dir.z()));
 		DifferentialGeometry queryPt;
 		double thit = INFINITY, eps;

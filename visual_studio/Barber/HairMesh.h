@@ -9,8 +9,8 @@
 const double timestep = 1.0 / 30.0;
 const QVector3D gravity(0, -6.2, 0);
 const QVector3D windforce(0, 0, -4);
-const QVector3D sphere(0, 6.2, -1.9);
-const double radius = 16.5;
+const QVector3D sphere(0, 7.8, -3);
+const double radius = 14.5;
 const double radSq = radius * radius;
 class LayeredHairMesh
 {
