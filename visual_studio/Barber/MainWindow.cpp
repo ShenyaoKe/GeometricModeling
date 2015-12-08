@@ -47,6 +47,11 @@ MainWindow::MainWindow(QWidget *parent)
 		QString filename = QFileDialog::getSaveFileName(
 			this, "Save hair mesh to...", "untitled.hms", tr("Hair Mesh Files(*.hms)"));
 		m_oglviewer->exportHMS(filename); });
+
+	// Simulation Option
+	connect(ui.gen_dynamic_hair, &QPushButton::clicked, m_oglviewer, &OGLViewer::createSimMesh);
+	connect(ui.simulate, &QPushButton::clicked, m_oglviewer, &OGLViewer::changeSimStatus);
+	connect(ui.play_button, &QPushButton::clicked, m_oglviewer, &OGLViewer::changeSimDrawStatus);
 }
 
 MainWindow::~MainWindow()

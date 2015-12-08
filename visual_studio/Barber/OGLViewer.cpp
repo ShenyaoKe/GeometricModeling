@@ -5,6 +5,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	, m_selectMode(OBJECT_SELECT)
 	, m_drawHairMesh(false), m_drawHairCurve(true), m_drawHairMeshWireframe(true)
 	, m_Select(-1), curStrokeID(-1), curLayerID(-1)
+	, isSimulating(false), m_drawSimulation(false)
 	, hair_mesh_opacity(1.0)
 {
 	// Set surface format for current widget
@@ -16,20 +17,25 @@ OGLViewer::OGLViewer(QWidget *parent)
 	this->setFormat(format);
 
 	// Link timer trigger
-	/*process_time.start();
-	QTimer *timer = new QTimer(this);
-	/ *timer->setSingleShot(false);* /
-	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-	timer->start(0);*/
+	simTimer = new QTimer(this);
+	/*timer->setSingleShot(false);*/
+	connect(simTimer, SIGNAL(timeout()), this, SLOT(update()));
+	simTimer->start(0);
+	simTimer->blockSignals(true);
 
 
 	// Read obj file
 #ifdef _DEBUG
 	charMesh = new HDS_Mesh("../../scene/obj/head.obj");
+	collisionMesh = new Mesh("../../scene/obj/head_tri.obj");
 #else
-	charMesh = new HDS_Mesh("quad_cube.obj");
+	charMesh = new HDS_Mesh("head.obj");
+	collisionMesh = new Mesh("head_tri.obj");
 #endif
 	hairMesh = new HairMesh(charMesh);
+
+	collisionMesh->refine(triangleList);
+	mytree = new KdTreeAccel(triangleList);
 	//////////////////////////////////////////////////////////////////////////
 
 	//ImageData* img = new ImageData("../../scene/texture/goldfish.png");
@@ -172,9 +178,17 @@ GLuint OGLViewer::bindHairMesh()
 	glDeleteBuffers(1, &hmsh_pts_vbo);
 	glDeleteBuffers(1, &hmsh_elb);
 
+	
 	glGenBuffers(1, &hmsh_pts_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, hmsh_pts_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * hmsh_verts.size(), &hmsh_verts[0], GL_STATIC_DRAW);
+	if (isSimulating)
+	{
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * hmsh_sim_verts.size(), &hmsh_sim_verts[0], GL_STATIC_DRAW);
+	}
+	else
+	{
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * hmsh_verts.size(), &hmsh_verts[0], GL_STATIC_DRAW);
+	}	
 
 	glGenBuffers(1, &hmsh_elb);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hmsh_elb);
@@ -404,12 +418,17 @@ void OGLViewer::paintGL()
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
 {
+	if (isSimulating)
+	{
+		animate();
+	}
+	
 	// Draw current frame
 	paintGL();
 	
-	process_fps = 1000.0 / process_time.elapsed();
+	/*process_fps = 1000.0 / process_time.elapsed();
 
-	process_time.start();
+	process_time.start();*/
 }
 // Resize function
 void OGLViewer::resizeGL(int w, int h)
@@ -445,7 +464,7 @@ void OGLViewer::extrude(double val)
 		curLayer->extrude(val);
 		hairMesh->exportIndexedVBO(
 			&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
-		emit echoHint(tr("Extruded by %lf").arg(val));
+		echoHint(tr("Extruded by %1").arg(val));
 		update();
 	}
 	
@@ -466,6 +485,47 @@ void OGLViewer::openHMS(const QString &filename)
 void OGLViewer::exportHMS(const QString &filename) const
 {
 	hairMesh->save(filename.toUtf8().constData());
+}
+
+void OGLViewer::animate()
+{
+	hairMesh->simulate();
+	hairMesh->exportIndexedVBO(
+		&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset, &hmsh_colors, &hmsh_sim_verts);
+}
+
+void OGLViewer::createSimMesh()
+{
+	hairMesh->initialSimulation();
+	hairMesh->assignCollision(mytree);
+}
+
+void OGLViewer::changeSimStatus()
+{
+	isSimulating = !isSimulating;
+	if (!isSimulating && m_drawSimulation)
+	{
+		simTimer->blockSignals(false);
+	}
+	else
+	{
+		simTimer->blockSignals(true);
+	}
+	update();
+}
+
+void OGLViewer::changeSimDrawStatus()
+{
+	m_drawSimulation = !m_drawSimulation;
+	if (isSimulating && m_drawSimulation)
+	{
+		simTimer->blockSignals(false);
+	}
+	else
+	{
+		simTimer->blockSignals(true);
+	}
+	update();
 }
 
 void OGLViewer::keyPressEvent(QKeyEvent *e)
@@ -659,7 +719,10 @@ void OGLViewer::mousePressEvent(QMouseEvent *e)
 	}
 	if (e->buttons() == Qt::LeftButton && e->modifiers() == Qt::NoModifier)
 	{
-		renderUidBuffer();
+		if (!isSimulating)
+		{
+			renderUidBuffer();
+		}
 		update();
 	}
 };

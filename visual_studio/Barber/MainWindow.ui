@@ -88,6 +88,7 @@
    </attribute>
    <addaction name="actionOpen"/>
    <addaction name="actionSave"/>
+   <addaction name="actionExtrude"/>
   </widget>
   <widget class="QDockWidget" name="attr_editor">
    <property name="windowTitle">
@@ -358,7 +359,7 @@
          <item>
           <layout class="QGridLayout" name="gridLayout_2">
            <item row="2" column="0">
-            <widget class="QPushButton" name="pushButton_3">
+            <widget class="QPushButton" name="simulate">
              <property name="text">
               <string>Simulation</string>
              </property>
@@ -372,9 +373,16 @@
             </widget>
            </item>
            <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="gen_dynamic_hair">
              <property name="text">
               <string>Generate Dynamic Hair</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QPushButton" name="play_button">
+             <property name="text">
+              <string>Play/Pause</string>
              </property>
             </widget>
            </item>
@@ -504,10 +512,35 @@
     <string>Ctrl+S</string>
    </property>
   </action>
+  <action name="actionExtrude">
+   <property name="text">
+    <string>Extrude</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
   <include location="MainWindow.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>actionExtrude</sender>
+   <signal>triggered()</signal>
+   <receiver>extrude_button</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>606</x>
+     <y>146</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

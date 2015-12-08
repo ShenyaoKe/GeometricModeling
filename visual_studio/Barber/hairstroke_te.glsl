@@ -21,7 +21,7 @@ vec4 posAtLayer(int layer, float s, float t)
 }
 float rand(vec2 co)
 {
-	return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+	return (fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453) + 1) * 0.5;
 }
 vec4 blossomCatmullRom(float t)
 {

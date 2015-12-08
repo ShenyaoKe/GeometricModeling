@@ -133,12 +133,50 @@ void HairMesh::save(const char* filename) const
 	fclose(HMS_File);
 }
 
+void HairMesh::initialSimulation()
+{
+	for (auto layer : layers)
+	{
+		auto& pts = layer->points;
+		layer->simPts.clear();
+		layer->simPts = pts;
+		layer->simVel.clear();
+		layer->simVel.insert(layer->simVel.end(), pts.size(), QVector3D());
+		layer->restLen.clear();
+		layer->restLen.insert(layer->restLen.end(), pts.size(), 0);
+		//layer->restAng.insert(layer->restAng.end(), pts.size(), 0);
+		for (int i = 4; i < pts.size(); i++)
+		{
+			layer->restLen[i] = (pts[i] - pts[i - 4]).length();
+			//layer->restAng[i] = 
+		}
+	}
+}
+
+void HairMesh::simulate()
+{
+	for (auto layer : layers)
+	{
+		layer->simulate();
+	}
+}
+
+void HairMesh::assignCollision(const KdTreeAccel* kdtree)
+{
+	acceltree = kdtree;
+	for (auto layer : layers)
+	{
+		layer->acceltree = kdtree;
+	}
+}
+
 void HairMesh::exportIndexedVBO(
 	vector<float>* vtx_array, vector<uint>* idx_array,
 	vector<uint>* vtx_offset_array, vector<uint>* idx_offset_array,
-	vector<float>* layer_color) const
+	vector<float>* layer_color, vector<float>* sim_vtx_array) const
 {
 	int layerSize = layers.size();
+	int bufferSize = 0;
 	if (vtx_array != nullptr)
 	{
 		vtx_array->clear();
@@ -152,14 +190,19 @@ void HairMesh::exportIndexedVBO(
 			idx_offset_array->clear();
 			idx_offset_array->reserve(layerSize + 1);
 		}
-		int size = 0;
+		
 		for (auto layer : layers)
 		{
-			vtx_offset_array->push_back(size);
-			size += layer->points.size();
+			vtx_offset_array->push_back(bufferSize);
+			bufferSize += layer->points.size();
 		}
-		vtx_offset_array->push_back(size);
-		vtx_array->reserve(size * 3);
+		vtx_offset_array->push_back(bufferSize);
+		vtx_array->reserve(bufferSize * 3);
+	}
+	if (sim_vtx_array != nullptr)
+	{
+		sim_vtx_array->clear();
+		sim_vtx_array->reserve(bufferSize * 3);
 	}
 	if (idx_array != nullptr)
 	{
@@ -170,7 +213,7 @@ void HairMesh::exportIndexedVBO(
 	for (int i = 0; i < layerSize; i++)
 	{
 		auto layer = layers[i];
-		layer->exportIndexedVBO((*vtx_offset_array)[i], vtx_array, idx_array);
+		layer->exportIndexedVBO((*vtx_offset_array)[i], vtx_array, idx_array, sim_vtx_array);
 		idx_offset_array->push_back(idx_array->size());
 	}
 	if (layer_color != nullptr)
@@ -305,51 +348,159 @@ void LayeredHairMesh::remove(int lv)
 }
 
 void LayeredHairMesh::exportIndexedVBO(int offset,
-	vector<float>* vtx_array, vector<uint>* idx_array) const
-{
-	bool has_vert(false), has_texcoord(false), has_normal(false), has_uid(false);
-
-	
-	/*if (vtx_array != nullptr)
+	vector<float>* vtx_array, vector<uint>* idx_array,
+	vector<float>* sim_vtx_array) const
+{	
+	if (vtx_array != nullptr)
 	{
-		vtx_array->clear();
-		vtx_array->reserve(points.size() * 3);
-		has_vert = true;
+		for (auto pt : points)
+		{
+			vtx_array->push_back(pt.x());
+			vtx_array->push_back(pt.y());
+			vtx_array->push_back(pt.z());
+		}
 	}
 	if (idx_array != nullptr)
 	{
-		idx_array->clear();
-	}*/
+		// If no mesh extruded
+		for (int i = seg + offset; i < points.size() + offset; i++)
+		{
+			if ((i - offset) % seg == 0)
+			{
+				idx_array->push_back(static_cast<uint>(i));
+				idx_array->push_back(static_cast<uint>(i + seg - 1));
+				idx_array->push_back(static_cast<uint>(i - 1));
+				idx_array->push_back(static_cast<uint>(i - seg));
+			}
+			else
+			{
+				idx_array->push_back(static_cast<uint>(i));
+				idx_array->push_back(static_cast<uint>(i - 1));
+				idx_array->push_back(static_cast<uint>(i - 1 - seg));
+				idx_array->push_back(static_cast<uint>(i - seg));
+			}
+
+		}
+
+		for (int i = points.size() - seg + offset; i < points.size() + offset; i++)
+		{
+			idx_array->push_back(i);
+		}
+	}
+	if (sim_vtx_array != nullptr)
+	{
+		for (auto pt : simPts)
+		{
+			sim_vtx_array->push_back(pt.x());
+			sim_vtx_array->push_back(pt.y());
+			sim_vtx_array->push_back(pt.z());
+		}
+	}
+
 	
-	for (auto pt : points)
-	{
-		vtx_array->push_back(pt.x());
-		vtx_array->push_back(pt.y());
-		vtx_array->push_back(pt.z());
-	}
+}
 
-	// If no mesh extruded
-	for (int i = seg + offset; i < points.size() + offset; i++)
+void LayeredHairMesh::externalUpdate(vector<QVector3D> &state)
+{
+	int compSize = state.size() / 2;
+	for (int i = 4; i < compSize; i++)
 	{
-		if ((i - offset) % seg == 0)
+		state[i + compSize] += (gravity + windforce) * timestep;
+		state[i] += 0.5 * state[i + compSize] * timestep;
+	}
+}
+
+void LayeredHairMesh::internalUpdate(vector<QVector3D> &state)
+{
+	//K1
+	auto K1 = internalForces(state) * timestep;
+	auto K2 = internalForces(state + K1 * (timestep * 0.5)) * timestep;
+	auto K3 = internalForces(state + K2 * (timestep * 0.5)) * timestep;
+	auto K4 = internalForces(state + K3 * timestep) * timestep;
+	double dem = 1.0 / 6.0;
+	state = state + K1 * dem + K2 * (dem * 2) + K3 * (dem * 2) + K4 * dem;
+	int compSize = state.size() / 2;
+	for (int i = 4; i < compSize; i++)
+	{
+		simPts[i] = state[i];
+		simVel[i] = state[i + compSize];
+	}
+}
+
+vector<QVector3D> LayeredHairMesh::internalForces(const vector<QVector3D> &state) const
+{
+	vector<QVector3D> ifs(state.size(), QVector3D());
+	float ks(5), kd(2), ko(5);
+	int compSize = state.size() / 2;
+	float lenSeg = compSize / seg;
+	for (int i = 4; i < compSize; i ++)
+	{
+		// Spring restriction
+		QVector3D dir = state[i - 4] - state[i];
+		float deltaLen = dir.length() - restLen[i];
+		dir.normalize();// *deltaLen;
+		QVector3D fs = ks * dir * deltaLen;
+		QVector3D fd = kd *
+			QVector3D::dotProduct(
+			state[i - 4 + compSize] - state[i + compSize], dir) * dir;
+
+		// Constrant to original mesh
+		float segU = (1 - (float)(i / seg) / lenSeg);
+		QVector3D distDir = (points[i] - state[i]) * ko;
+
+		ifs[i] = state[i + compSize];
+		ifs[i + compSize] += fs + fd - state[i + compSize] * 0.1 + distDir;
+		ifs[i - 4 + compSize] -= fs + fd;
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		ifs[i] = QVector3D();
+		ifs[i + compSize] = QVector3D();
+	}
+	return ifs;
+}
+
+void LayeredHairMesh::collisionDetect(vector<QVector3D> &state)
+{
+	int compSize = state.size() / 2;
+	for (int i = 4; i < compSize; i++)
+	{
+		auto& curPos = simPts[i];
+		auto& nextPos = state[i];
+		auto dir = nextPos - curPos;
+		double pathLen = dir.length();
+		dir /= pathLen;
+		
+		/*if ((nextPos - sphere).lengthSquared() < radSq)
 		{
-			idx_array->push_back(static_cast<uint>(i));
-			idx_array->push_back(static_cast<uint>(i + seg - 1));
-			idx_array->push_back(static_cast<uint>(i - 1));
-			idx_array->push_back(static_cast<uint>(i - seg));
-		}
-		else
+			state[i] = (nextPos - sphere) * 2 + sphere;
+		}*/
+		/*Ray inray(Point3D(curPos.x(), curPos.y(), curPos.z()), Point3D(dir.x(), dir.y(), dir.z()));
+		DifferentialGeometry queryPt;
+		double thit = INFINITY, eps;
+		if (acceltree->hit(inray, &queryPt, &thit, &eps))
 		{
-			idx_array->push_back(static_cast<uint>(i));
-			idx_array->push_back(static_cast<uint>(i - 1));
-			idx_array->push_back(static_cast<uint>(i - 1 - seg));
-			idx_array->push_back(static_cast<uint>(i - seg));
-		}
-
+			if (thit < pathLen)
+			{
+				state[i] = curPos;
+			}
+		}*/
+		
+		
 	}
+}
 
-	for (int i = points.size() - seg + offset; i < points.size() + offset; i++)
-	{
-		idx_array->push_back(i);
-	}
+void LayeredHairMesh::simulate()
+{
+	auto state = simPts;
+	state.insert(state.end(), simVel.begin(), simVel.end());
+	externalUpdate(state);
+	internalUpdate(state);
+	collisionDetect(state);
+
+	int compSize = simPts.size();
+	simPts.clear();
+	simPts.insert(simPts.end(), state.begin(), state.begin() + compSize);
+	simVel.clear();
+	simVel.insert(simVel.end(), state.begin() + compSize, state.end());
 }

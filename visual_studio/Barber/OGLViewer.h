@@ -20,6 +20,7 @@
 #include "Geometry/Mesh.h"
 #include "Math/Matrix4D.h"
 #include "Camera/Camera.h"
+#include "Accel/KdTreeAccel.h"
 #include "hds_mesh.h"
 #include "HairMesh.h"
 
@@ -32,10 +33,7 @@ static GLfloat proj_mat[16];
 //////////////////////////////////////////////////////////////////////////
 // Acceleration
 //////////////////////////////////////////////////////////////////////////
-/*
-static vector<Shape*> triangleList;
-static KdTreeAccel *mytree;
-static ImageData* img;*/
+
 
 const double eps = 5e-4;
 
@@ -93,14 +91,17 @@ private:
 
 	void openHMS(const QString &filename);
 	void exportHMS(const QString &filename) const;
+private: // Simulation part
+	void animate();
+	void createSimMesh();
+	void changeSimStatus();
+	void changeSimDrawStatus();
 signals:
 	void echoHint(const QString &);
 public:
 	double process_fps;
 protected:
 	perspCamera *view_cam;
-	vector<Shape*> triangleList;
-	KdTreeAccel *mytree;
 	GLint m_Select;
 private:// OpenGL variables
 	friend class MainWindow;
@@ -116,6 +117,10 @@ private:// OpenGL variables
 	bool m_drawHairMesh;
 	bool m_drawHairCurve;
 	bool m_drawHairMeshWireframe;
+
+	bool isSimulating = false;
+	bool m_drawSimulation = true;
+	QTimer *simTimer;
 private: //Scene data
 	HDS_Mesh* charMesh;
 	vector<GLfloat> char_verts;
@@ -126,6 +131,7 @@ private: //Scene data
 
 	HairMesh* hairMesh;
 	vector<GLfloat> hmsh_verts;
+	vector<GLfloat> hmsh_sim_verts;
 	vector<GLfloat> hmsh_colors;
 	vector<GLuint> hmsh_idxs;
 	vector<GLuint> hmsh_vtx_offset;	// Vertex offset, last val is the size
@@ -142,6 +148,10 @@ private: //Scene data
 	int curLayerID;
 	int curStrokeID;
 
+private:
+	vector<Shape*> triangleList;
+	Mesh* collisionMesh;
+	KdTreeAccel *mytree;
 private: //Shaders
 	// Scene Object Shader
 	GLSLProgram* shader_obj;// Character Shader
