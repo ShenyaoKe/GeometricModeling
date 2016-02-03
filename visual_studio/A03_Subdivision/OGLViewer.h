@@ -31,17 +31,17 @@ static GLfloat* model_norms;// Normal coordinates vbo
 static GLint* model_uids;
 static int model_vbo_size;// Triangle face numbers
 
-static HDS_Mesh* hds_box;
-static Mesh *box_mesh;// Display object
+static HDS_Mesh* hds_model;
+static Mesh *mesh_model;// Display object
 static Subdivision* subd_mesh;
-static vector<GLfloat> box_verts;
-static vector<GLushort> box_idxs;
+static vector<GLfloat> mesh_verts;
+static vector<GLuint> mesh_idxs;
 //static GLfloat* box_uvs;// Texture coordinates vbo
 //static GLfloat* box_norms;// Normal coordinates vbo
 
-static GLSLProgram* shader;// OpenGL shader program
-static GLSLProgram* box_shader;// OpenGL shader program
 static GLSLProgram* point_shader;// OpenGL shader program
+static GLSLProgram* wireframe_shader;// OpenGL shader program
+static GLSLProgram* mesh_shader;// OpenGL shader program
 //static Matrix4D matrix;// Transform matrix
 
 static GLfloat model_mat[16];// Uniform matrix buffer
@@ -95,11 +95,8 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
-	GLuint bindBox();
-	GLuint bindMesh();
+	void bindMesh();
 	void saveFrameBuffer();
-public:
-	double process_fps;
 protected:
 	perspCamera *view_cam;
 private:
@@ -117,6 +114,8 @@ private: // OpenGL variables
 	bool drawPoint = false;
 	bool drawWireFrame = false;
 	vector<GLuint> vao_handles;
+	GLuint subd_vbo;
+	GLuint subd_ibo;
 	GLuint subd_vao;
 
 	friend class MainWindow;

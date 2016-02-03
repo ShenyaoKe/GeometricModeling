@@ -17,13 +17,13 @@ OGLViewer::OGLViewer(QWidget *parent)
 	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
 	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
 #ifdef _DEBUG
-	hds_box = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
+	hds_model = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
 #else
-	hds_box = new HDS_Mesh("quad_cube.obj");
+	hds_model = new HDS_Mesh("quad_cube.obj");
 #endif
 	//hds_box->reIndexing();
 	//hds_box->validate();
-	subd_mesh = new Subdivision(0, hds_box);
+	subd_mesh = new Subdivision(0, hds_model);
 
 	resetCamera();
 }
@@ -52,6 +52,7 @@ void OGLViewer::initializeGL()
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_POLYGON_SMOOTH);*/
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
+	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_STENCIL_TEST);
 	glBlendEquation(GL_FUNC_ADD_EXT);
@@ -62,33 +63,23 @@ void OGLViewer::initializeGL()
 	//////////////////////////////////////////////////////////////////////////
 
 	// Create shader files
-	shader = new GLSLProgram("vert.glsl", "frag.glsl");
-	box_shader = new GLSLProgram("indexed_vs.glsl", "indexed_fs.glsl", "indexed_gs.glsl");
 	point_shader = new GLSLProgram("point_vs.glsl", "point_fs.glsl");
+	wireframe_shader = new GLSLProgram("wireframe_vs.glsl", "wireframe_fs.glsl", "wireframe_gs.glsl");
+	mesh_shader = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
 
 	// Export vbo for shaders
-	//box_mesh->exportVBO(box_vbo_size, box_verts, box_uvs, box_norms);
-	//box_mesh->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	hds_box->exportIndexedVBO(&box_verts, nullptr, nullptr, &box_idxs);
-	subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
-	//model_mesh->exportVBO(model_vbo_size, model_verts, model_uvs, model_norms);
+	hds_model->exportIndexedVBO(&mesh_verts, nullptr, nullptr, &mesh_idxs);
+	subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
 
-	subd_vao = bindBox();
-	//vao_handles.push_back(bindBox());
-	//vao_handles.push_back(bindMesh());
+	bindMesh();
 
 	// Get uniform variable location
-	shader->add_uniformv("model_matrix");
-	shader->add_uniformv("view_matrix");
-	shader->add_uniformv("proj_matrix");; // WorldToCamera matrix
-	box_shader->add_uniformv("model_matrix");
-	box_shader->add_uniformv("view_matrix");
-	box_shader->add_uniformv("proj_matrix");
-	point_shader->add_uniformv("model_matrix");
 	point_shader->add_uniformv("view_matrix");
-	point_shader->add_uniformv("proj_matrix");
-
-	cout << "Selection ID loc:" << sel_id_loc << endl;
+	point_shader->add_uniformv("proj_matrix");; // WorldToCamera matrix
+	wireframe_shader->add_uniformv("view_matrix");
+	wireframe_shader->add_uniformv("proj_matrix");
+	mesh_shader->add_uniformv("view_matrix");
+	mesh_shader->add_uniformv("proj_matrix");
 }
 
 void OGLViewer::loadOBJ()
@@ -97,13 +88,13 @@ void OGLViewer::loadOBJ()
 		this, "Load OBJ file...", "dragon.obj", tr("Object Files(*.obj)"));
 	if (filename.size() > 0)
 	{
-		delete hds_box;
+		delete hds_model;
 		delete subd_mesh;
-		hds_box = new HDS_Mesh(filename.toUtf8().constData());
+		hds_model = new HDS_Mesh(filename.toUtf8().constData());
 		subd_lv = 0;
-		subd_mesh = new Subdivision(0, hds_box);
-		subd_mesh->exportIndexedVBO(0, &box_verts, nullptr, nullptr, &box_idxs);
-
+		subd_mesh = new Subdivision(0, hds_model);
+		subd_mesh->exportIndexedVBO(0, &mesh_verts, nullptr, nullptr, &mesh_idxs);
+		//bindMesh();
 		emit levelChanged(subd_lv);
 		update();
 	}
@@ -112,7 +103,7 @@ void OGLViewer::loadOBJ()
 void OGLViewer::saveOBJ()
 {
 	QString filename = QFileDialog::getSaveFileName(
-		this, "Save OBJ file...", "default");
+		this, "Save OBJ file...", "default", "Object File(*.obj)");
 	if (filename.size() > 0)
 	{
 		filename.append("_"+QString::number(subd_lv)+".obj");
@@ -135,79 +126,38 @@ void OGLViewer::smoothMesh()
 	}
 	subd_mesh->subdivide();
 	subd_lv = subd_mesh->getLevel();
-	subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
+	subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
+
+	bindMesh();
 
 	emit levelChanged(subd_lv);
 	update();
 }
 
-GLuint OGLViewer::bindBox()
+void OGLViewer::bindMesh()
 {
-	GLuint box_pts_vbo;
-	glGenBuffers(1, &box_pts_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, box_pts_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * box_verts.size(), &box_verts[0], GL_STATIC_DRAW);
-
-	GLuint elementbuffer;
-	glGenBuffers(1, &elementbuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-	if (showPiece)
-	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * (box_idxs.size() - offset * 3), &box_idxs[offset * 3], GL_STATIC_DRAW);
-	} 
-	else
-	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * box_idxs.size(), &box_idxs[0], GL_STATIC_DRAW);
-	}
+	glDeleteVertexArrays(1, &subd_vao);
+	glDeleteBuffers(1, &subd_vbo);
+	glDeleteBuffers(1, &subd_ibo);
 
 	// Bind VAO
-	GLuint box_vao;
-	glGenVertexArrays(1, &box_vao);
-	glBindVertexArray(box_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, box_pts_vbo);
+	glGenVertexArrays(1, &subd_vao);
+	glBindVertexArray(subd_vao);
+
+	glGenBuffers(1, &subd_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, subd_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * mesh_verts.size(), &mesh_verts[0], GL_STATIC_DRAW);
+	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 
-	//vao_handles.push_back(box_vao);
-	return box_vao;
-}
+	glGenBuffers(1, &subd_ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subd_ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * mesh_idxs.size(), &mesh_idxs[0], GL_STATIC_DRAW);
 
-GLuint OGLViewer::bindMesh()
-{
-	GLuint model_pts_vbo;
-	glGenBuffers(1, &model_pts_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_pts_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * model_vbo_size, model_verts, GL_STATIC_DRAW);
-
-	// Bind normal value as color
-	GLuint model_normal_vbo;
-	glGenBuffers(1, &model_normal_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_normal_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 9 * model_vbo_size, model_norms, GL_STATIC_DRAW);
-
-	// Bind normal value as color
-	GLuint model_uv_vbo;
-	glGenBuffers(1, &model_uv_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model_uv_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * model_vbo_size, model_uvs, GL_STATIC_DRAW);
-
-	// Bind VAO
-	GLuint model_vao;
-	glGenVertexArrays(1, &model_vao);
-	glBindVertexArray(model_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, model_pts_vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, model_normal_vbo);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, model_uv_vbo);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-	glEnableVertexAttribArray(2);
-
-	return model_vao;
-	//vao_handles.push_back(model_vao);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void OGLViewer::paintGL()
@@ -218,87 +168,66 @@ void OGLViewer::paintGL()
 	glClearColor(0.6, 0.6, 0.6, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Points
-	/*glDisable(GL_CULL_FACE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	// Bind Box VAOs
-	glBindVertexArray(vao_handles[0]);
-	// Use shader program
-	point_shader->use_program();
-	glPointSize(2.0);
-	// Apply uniform matrix
-	//glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, model_mat);
-	glUniformMatrix4fv((*point_shader)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*point_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-	glDrawArrays(GL_POINTS, 0, box_vbo_size * 3);*/
-	//////////////////////////////////////////////////////////////////////////
+	
 	// Model
-	if (drawWireFrame)
+	/*if (drawWireFrame)
 	{
 		glDisable(GL_CULL_FACE);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	} 
+	}
 	else
-	{
+	{*/
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK); // cull back face
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	}
+	//}
+	bindMesh();
+	glBindVertexArray(subd_vao);
 	
-	//glBindVertexArray(subd_vao);
-	subd_vao = bindBox();
-	// Use shader program
-	box_shader->use_program();
-
-	//glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, model_mat);
-	glUniformMatrix4fv((*box_shader)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*box_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-	//glDrawArrays(GL_POINTS, 0, box_vbo_size * 3);
-	
-	if (showPiece)
+	/*if (showPiece)
 	{
-		glDrawElements(GL_LINES_ADJACENCY, 4, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_LINES_ADJACENCY, 4, GL_UNSIGNED_INT, 0);
+		
 	} 
-	else
+	else*/
 	{
-		glDrawElements(GL_LINES_ADJACENCY, box_idxs.size(), GL_UNSIGNED_SHORT, 0);
+		mesh_shader->use_program();
+		glUniformMatrix4fv((*mesh_shader)("view_matrix"), 1, GL_FALSE, view_mat);
+		glUniformMatrix4fv((*mesh_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
+		glDrawElements(GL_LINES_ADJACENCY, mesh_idxs.size(), GL_UNSIGNED_INT, 0);
+		mesh_shader->unuse();
+
+		if (drawWireFrame)
+		{
+			wireframe_shader->use_program();
+			glUniformMatrix4fv((*wireframe_shader)("view_matrix"), 1, GL_FALSE, view_mat);
+			glUniformMatrix4fv((*wireframe_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glLineWidth(2.f);
+			glDrawElements(GL_LINES_ADJACENCY, mesh_idxs.size(), GL_UNSIGNED_INT, 0);
+			wireframe_shader->unuse();
+		}
+		
+		if (drawPoint)
+		{
+			glBindVertexArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, subd_vbo);
+
+			point_shader->use_program();
+			glUniformMatrix4fv((*point_shader)("view_matrix"), 1, GL_FALSE, view_mat);
+			glUniformMatrix4fv((*point_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glPointSize(6.0);
+			glDrawArrays(GL_POINTS, 0, mesh_verts.size());
+			point_shader->unuse();
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
+
 	}
-	box_shader->unuse();
-
-	point_shader->use_program();
-	glUniformMatrix4fv((*point_shader)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*point_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-
-	if (drawPoint)
-	{
-		glPointSize(6.0);
-		glDrawArrays(GL_POINTS, 0, box_verts.size());
-	}
-	point_shader->unuse();
-	glDeleteVertexArrays(1, &subd_vao);
-	//////////////////////////////////////////////////////////////////////////
-	/*glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK); // cull back face
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	//bindMesh();
-	glBindVertexArray(vao_handles[1]);
-	shader->use_program();
-	// Apply uniform matrix
-	//glUniformMatrix4fv(model_mat_loc, 1, GL_FALSE, sphere_model_mat);
-	glUniformMatrix4fv((*shader)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-	glDrawArrays(GL_TRIANGLES, 0, model_vbo_size * 9);*/
 }
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
 {
 	// Draw current frame
 	paintGL();
-
-	process_fps = 1000.0 / process_time.elapsed();
-
-	process_time.start();
 }
 // Resize function
 void OGLViewer::resizeGL(int w, int h)
@@ -307,49 +236,13 @@ void OGLViewer::resizeGL(int w, int h)
 	view_cam->resizeViewport(width() / static_cast<double>(height()));
 	view_cam->setResolution(width(), height());
 	view_cam->exportVBO(nullptr, proj_mat, nullptr);
-	glViewport(0, 0, width(), height());
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 }
 /************************************************************************/
 /* Qt User Operation Functions                                          */
 /************************************************************************/
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
-	if (e->key() == Qt::Key_W)
-	{
-		view_cam->zoom(0.0, 0.0, 0.10);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-
-	}
-	else if (e->key() == Qt::Key_S)
-	{
-		view_cam->zoom(0.0, 0.0, -0.10);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_Q)
-	{
-		view_cam->zoom(0.10, 0.0, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_A)
-	{
-		view_cam->zoom(-0.10, 0.0, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_E)
-	{
-		view_cam->zoom(0.0, 0.10, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_D)
-	{
-		view_cam->zoom(0.0, -0.10, 0.0);
-		view_cam->exportVBO(view_mat, nullptr, nullptr);
-	}
-	else if (e->key() == Qt::Key_Home)
+	if (e->key() == Qt::Key_Home)
 	{
 		initParas();
 	}
@@ -358,15 +251,16 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	{
 		//offset = min(++offset, (int)box_idxs.size() / 3 - 1);
 		subd_lv = min(++subd_lv, (int)subd_mesh->getLevel());
-		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
+		subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
+		bindMesh();
 
 		emit levelChanged(subd_lv);
 	}
 	else if (e->key() == Qt::Key_Minus)
 	{
 		subd_lv = max(--subd_lv, 0);
-		subd_mesh->exportIndexedVBO(subd_lv, &box_verts, nullptr, nullptr, &box_idxs);
-
+		subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
+		bindMesh();
 		emit levelChanged(subd_lv);
 	}
 	else if (e->key() == Qt::Key_Left)
@@ -375,7 +269,7 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	}
 	else if (e->key() == Qt::Key_Right)
 	{
-		offset = min(++offset, (int)box_idxs.size() / 3 - 1);
+		offset = min(++offset, (int)mesh_idxs.size() / 3 - 1);
 	}
 	else if (e->key() == Qt::Key_L)
 	{
@@ -388,15 +282,6 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	else if (e->key() == Qt::Key_O)
 	{
 		drawWireFrame = !drawWireFrame;
-	}
-	// Selection mode switch
-	else if (e->key() == Qt::Key_F8)
-	{
-		m_selectMode = OBJECT_SELECT;
-	}
-	else if (e->key() == Qt::Key_F11)
-	{
-		m_selectMode = FACE_COMPONENT_SELECT;
 	}
 	// Save frame buffer
 	/*else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
@@ -431,8 +316,6 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 {
 	int dx = e->x() - m_lastMousePos[0];
 	int dy = e->y() - m_lastMousePos[1];
-
-	printf("dx: %d, dy: %d\n", dx, dy);
 
 	if ((e->buttons() == Qt::LeftButton) && (e->modifiers() == Qt::AltModifier))
 	{
@@ -487,5 +370,4 @@ void OGLViewer::initParas()
 void OGLViewer::saveFrameBuffer()
 {
 	this->grab().save("../../scene/texture/framebuffer.png");
-
 }
