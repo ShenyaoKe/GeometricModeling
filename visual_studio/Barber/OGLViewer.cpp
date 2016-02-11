@@ -304,7 +304,7 @@ void OGLViewer::paintGL()
 	// Make curent window
 	makeCurrent();
 	// Clear background and color buffer
-	glClearColor(0.6, 0.6, 0.6, 0);
+	glClearColor(0.6, 0.6, 0.6, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -425,7 +425,10 @@ void OGLViewer::paintEvent(QPaintEvent *e)
 	
 	// Draw current frame
 	paintGL();
-	
+	/*if (isSimulating)
+	{
+		this->grab().save(tr("screenshot/cuntou/cuntou_%1.png").arg(QString::number(tcount++), 4, '0'));		
+	}*/
 	/*process_fps = 1000.0 / process_time.elapsed();
 
 	process_time.start();*/

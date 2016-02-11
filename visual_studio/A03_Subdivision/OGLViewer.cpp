@@ -30,6 +30,10 @@ OGLViewer::OGLViewer(QWidget *parent)
 
 OGLViewer::~OGLViewer()
 {
+	delete model_mesh;
+	model_mesh = nullptr;
+	delete view_cam;
+	view_cam = nullptr;
 }
 /************************************************************************/
 /* OpenGL Rendering Modules                                             */
@@ -165,7 +169,7 @@ void OGLViewer::paintGL()
 	// Make curent window
 	makeCurrent();
 	// Clear background and color buffer
-	glClearColor(0.6, 0.6, 0.6, 1.0);
+	glClearColor(0.6, 0.6, 0.6, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	
@@ -271,24 +275,23 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	{
 		offset = min(++offset, (int)mesh_idxs.size() / 3 - 1);
 	}
-	else if (e->key() == Qt::Key_L)
+	else if (e->key() == Qt::Key_1)
 	{
 		showPiece = !showPiece;
 	}
-	else if (e->key() == Qt::Key_P)
+	else if (e->key() == Qt::Key_2)
 	{
 		drawPoint = !drawPoint;
 	}
-	else if (e->key() == Qt::Key_O)
+	else if (e->key() == Qt::Key_3)
 	{
 		drawWireFrame = !drawWireFrame;
 	}
 	// Save frame buffer
-	/*else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
+	else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
 	{
 		this->saveFrameBuffer();
-	}*/
-	//////////////////////////////////////////////////////////////////////////
+	}
 	else
 	{
 		QOpenGLWidget::keyPressEvent(e);
@@ -356,7 +359,7 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 void OGLViewer::resetCamera()
 {
 	Transform cam2w = lookAt(Point3D(30, 10, 30), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
-	Transform pers = Transform(setPerspective(67,
+	Transform pers = Transform(setPerspective(54.3,
 		width() / static_cast<double>(height()), 0.1, 500));
 	view_cam = new perspCamera(cam2w, pers);
 	view_cam->exportVBO(view_mat, proj_mat, nullptr);
@@ -369,5 +372,7 @@ void OGLViewer::initParas()
 
 void OGLViewer::saveFrameBuffer()
 {
-	this->grab().save("../../scene/texture/framebuffer.png");
+	QString filename = QFileDialog::getSaveFileName(
+		this, "Save Screenshot ...", "default", "PNG(*.png)");
+	this->grab().save(filename);
 }
