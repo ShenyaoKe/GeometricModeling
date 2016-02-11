@@ -50,7 +50,7 @@ OGLViewer::~OGLViewer()
 void OGLViewer::resetCamera()
 {
 	Transform cam2w = lookAt(Point3D(20, 16, 20), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
-	Transform pers = Transform(setPerspective(67,
+	Transform pers = Transform(setPerspective(54,
 		width() / static_cast<double>(height()), 0.1, 100));
 	view_cam = new perspCamera(cam2w, pers);
 	view_cam->exportVBO(view_mat, proj_mat, nullptr);
@@ -363,7 +363,7 @@ void OGLViewer::paintGL()
 		
 		if (m_drawHairMeshWireframe)
 		{
-			glLineWidth(1);
+			glLineWidth(2.0);
 			shader_wireframe->use_program();
 			glUniformMatrix4fv((*shader_wireframe)("view_matrix"), 1, GL_FALSE, view_mat);
 			glUniformMatrix4fv((*shader_wireframe)("proj_matrix"), 1, GL_FALSE, proj_mat);
@@ -418,7 +418,7 @@ void OGLViewer::paintGL()
 // Redraw function
 void OGLViewer::paintEvent(QPaintEvent *e)
 {
-	if (isSimulating)
+	if (isSimulating && m_drawSimulation)
 	{
 		animate();
 	}
@@ -501,6 +501,7 @@ void OGLViewer::createSimMesh()
 {
 	hairMesh->initialSimulation();
 	hairMesh->assignCollision(mytree);
+	m_drawSimulation = true;
 }
 
 void OGLViewer::changeSimStatus()
@@ -559,7 +560,9 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	{
 		if (e->modifiers() == Qt::ControlModifier)
 		{
-			this->saveFrameBuffer();
+			QString filename = QFileDialog::getSaveFileName(
+				this, "Save Screenshot ...", "default", "PNG(*.png)");
+			this->grab().save(filename);
 		}
 		break;
 	}

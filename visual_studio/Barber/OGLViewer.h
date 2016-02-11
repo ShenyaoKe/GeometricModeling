@@ -119,7 +119,7 @@ private:// OpenGL variables
 	bool m_drawHairMeshWireframe;
 
 	bool isSimulating = false;
-	bool m_drawSimulation = true;
+	bool m_drawSimulation = false;
 	QTimer *simTimer;
 private: //Scene data
 	HDS_Mesh* charMesh;
