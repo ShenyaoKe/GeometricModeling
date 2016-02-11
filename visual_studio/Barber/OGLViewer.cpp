@@ -26,7 +26,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 
 	// Read obj file
 #ifdef _DEBUG
-	charMesh = new HDS_Mesh("../../scene/obj/head2.obj");
+	charMesh = new HDS_Mesh("../../scene/obj/head.obj");
 	collisionMesh = new Mesh("../../scene/obj/head_tri.obj");
 #else
 	charMesh = new HDS_Mesh("head.obj");
@@ -478,7 +478,7 @@ void OGLViewer::openHMS(const QString &filename)
 	delete hairMesh;
 	hairMesh = new HairMesh(charMesh, filename.toUtf8().constData());
 	hairMesh->exportIndexedVBO(
-		&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset);
+		&hmsh_verts, &hmsh_idxs, &hmsh_vtx_offset, &hmsh_idx_offset, &hmsh_colors);
 	update();
 }
 

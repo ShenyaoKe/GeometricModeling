@@ -20,7 +20,7 @@
 #include "Geometry/Mesh.h"
 #include "Math/Matrix4D.h"
 #include "Camera/Camera.h"
-#include "Accel/KdTreeAccel.h"
+//#include "Accel/KdTreeAccel.h"
 #include "hds_mesh.h"
 #include "HairMesh.h"
 

@@ -1,4 +1,4 @@
-#version 440
+#version 430
 /*in vec3 normal;*/
 uniform unsigned int rootColor, tipColor, scatterColor;// = 0xFFFFFF;
 in vec3 uvw;
