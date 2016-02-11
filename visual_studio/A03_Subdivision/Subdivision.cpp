@@ -79,7 +79,7 @@ void Subdivision::saveAsOBJ(uint lv, const char* filename) const
 
 void Subdivision::exportIndexedVBO(int lv,
 	vector<float>* vtx_array, vector<float>* uv_array,
-	vector<float>* norm_array, vector<ushort>* idx_array)
+	vector<float>* norm_array, vector<uint>* idx_array)
 {
 	if (lv < 1 || subd_mesh.size() == 0)// 0 or negative value
 	{

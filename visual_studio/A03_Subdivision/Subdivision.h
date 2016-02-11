@@ -28,7 +28,7 @@ public:
 		vector<float>* vtx_array = nullptr,
 		vector<float>* uv_array = nullptr,
 		vector<float>* norm_array = nullptr,
-		vector<ushort>* idx_array = nullptr);
+		vector<uint>* idx_array = nullptr);
 private:
 	mesh_t* subdivide(const mesh_t* origin);
 private:

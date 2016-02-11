@@ -18,43 +18,22 @@
 #include "Math/MathUtil.h"
 #include "Image/ImageData.h"
 #include "Geometry/Mesh.h"
-//#include "Math/Matrix4D.h"
+#include "Math/Matrix4D.h"
 #include "Camera/Camera.h"
-#include "Accel/KdTreeAccel.h"
+//#include "Accel/KdTreeAccel.h"
+#include "hds_mesh.h"
+#include "HairMesh.h"
 
-static Mesh *model_mesh;
-static GLfloat* model_verts;// vertices vbo
-static GLfloat* model_uvs;// Texture coordinates vbo
-static GLfloat* model_norms;// Normal coordinates vbo
-static GLint* model_uids;
-static int model_vbo_size;// Triangle face numbers
 
-static Mesh *box_mesh;// Display object
-static GLfloat* box_verts;// vertices vbo
-static GLfloat* box_uvs;// Texture coordinates vbo
-static GLfloat* box_norms;// Normal coordinates vbo
-static GLint* box_idxs;
-static int box_vbo_size;// Triangle face numbers
-static GLSLProgram* shader;// OpenGL shader program
-static GLSLProgram* shader_uid;// OpenGL shader program
 static Matrix4D matrix;// Transform matrix
 
-static int model_mat_loc;// Uniform matrix location
 static GLfloat model_mat[16];// Uniform matrix buffer
-static int view_mat_loc;// Uniform matrix location
 static GLfloat view_mat[16];
-static int proj_mat_loc;// Porjection matrix location
 static GLfloat proj_mat[16];
-static int sel_id_loc;
 //////////////////////////////////////////////////////////////////////////
 // Acceleration
 //////////////////////////////////////////////////////////////////////////
-static vector<Shape*> triangleList;
-static KdTreeAccel *mytree;
-static ImageData* img;
-//////////////////////////////////////////////////////////////////////////
-// Sphere Attribute
-//////////////////////////////////////////////////////////////////////////
+
 
 const double eps = 5e-4;
 
@@ -67,15 +46,26 @@ public:
 	enum Select_Mode
 	{
 		OBJECT_SELECT,
-		COMPONENT_SELECT,
-		FACE_COMPONENT_SELECT
+		STROKE_SELECT,
+		LAYER_SELECT
+	};
+	enum Operation_Mode
+	{
+		OP_NULL,
+		OP_TRANSLATE,
+		OP_ROTATE,
+		OP_SCALE
+	};
+	enum Operation_Axis
+	{
+		OP_Z_AXIS = 0,
+		OP_Y_AXIS = 1,
+		OP_X_AXIS = 2
 	};
 	//OGLViewer();
 	OGLViewer(QWidget *parent = nullptr);
 	~OGLViewer();
 
-	//void update();
-public slots:
 	void resetCamera();
 	void initParas();
 protected:
@@ -89,29 +79,93 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
-	void bindBox();
-	void bindMesh();
+	void initShader();
+	GLuint bindCharacter();
+	GLuint bindHairMesh();
+
 	void renderUidBuffer();
 	void saveFrameBuffer();
+
+	void generateHairCage();
+	void extrude(double val);
+
+	void openHMS(const QString &filename);
+	void exportHMS(const QString &filename) const;
+private: // Simulation part
+	void animate();
+	void createSimMesh();
+	void changeSimStatus();
+	void changeSimDrawStatus();
+signals:
+	void echoHint(const QString &);
 public:
 	double process_fps;
 protected:
 	perspCamera *view_cam;
-	vector<Shape*> triangleList;
-	KdTreeAccel *mytree;
 	GLint m_Select;
-private:
+private:// OpenGL variables
+	friend class MainWindow;
 	int fps;
 	int tcount;
 
 	QTime process_time;
 	int m_lastMousePos[2];
 	int m_selectMode;
-private: // OpenGL variables
+	int m_operationMode;
+	int m_operationAxis;
 	int display_mode = 0;
-	vector<GLuint> vao_handles;
+	bool m_drawHairMesh;
+	bool m_drawHairCurve;
+	bool m_drawHairMeshWireframe;
 
-	friend class MainWindow;
+	bool isSimulating = false;
+	bool m_drawSimulation = false;
+	QTimer *simTimer;
+private: //Scene data
+	HDS_Mesh* charMesh;
+	vector<GLfloat> char_verts;
+	vector<GLuint> char_idxs;
+	GLuint char_pts_vbo;
+	GLuint char_elb;
+	GLuint char_vao;
+
+	HairMesh* hairMesh;
+	vector<GLfloat> hmsh_verts;
+	vector<GLfloat> hmsh_sim_verts;
+	vector<GLfloat> hmsh_colors;
+	vector<GLuint> hmsh_idxs;
+	vector<GLuint> hmsh_vtx_offset;	// Vertex offset, last val is the size
+	vector<GLuint> hmsh_idx_offset; // Index component offest, need /4
+	GLuint hmsh_pts_vbo;
+	GLuint hmsh_elb;
+	GLuint hmsh_vao;
+
+	QColor hairRootColor = QColor(0x502800);
+	QColor hairTipColor = QColor(0xFFFAC4);
+	QColor hairScatterColor;
+	GLfloat hair_mesh_opacity;
+
+	int curLayerID;
+	int curStrokeID;
+
+private:
+	vector<Shape*> triangleList;
+	Mesh* collisionMesh;
+	KdTreeAccel *mytree;
+private: //Shaders
+	// Scene Object Shader
+	GLSLProgram* shader_obj;// Character Shader
+	GLSLProgram* shader_hairmesh;// Hair Mesh Shader
+	GLSLProgram* shader_wireframe;// Wireframe Shader
+	GLSLProgram* shader_sel_layer;// Selected Hair Layer Shader
+
+	// Framebuffer Shaders
+	GLSLProgram* shader_uid;// Picking Shader
+	GLSLProgram* shader_stroke_uid;// Picking Shader
+	GLSLProgram* shader_layer_uid;// Picking Shader
+
+	// Hair Shader
+	GLSLProgram* shader_hairstroke;
 };
 
 #endif // __OGLVIEWER__

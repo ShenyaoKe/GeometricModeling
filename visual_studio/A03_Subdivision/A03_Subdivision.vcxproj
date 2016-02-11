@@ -183,13 +183,16 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\uic.exe" -o ".\GeneratedFiles\ui_%(Filename).h" "%(FullPath)"</Command>
     </CustomBuild>
     <None Include="frag.glsl" />
-    <None Include="indexed_fs.glsl" />
-    <None Include="indexed_gs.glsl" />
-    <None Include="indexed_vs.glsl" />
+    <None Include="quad_fs.glsl" />
+    <None Include="quad_gs.glsl" />
+    <None Include="quad_vs.glsl" />
     <None Include="point_fs.glsl" />
     <None Include="point_vs.glsl" />
     <None Include="stylesheet.qss" />
     <None Include="vert.glsl" />
+    <None Include="wireframe_fs.glsl" />
+    <None Include="wireframe_gs.glsl" />
+    <None Include="wireframe_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

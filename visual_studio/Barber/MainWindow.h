@@ -6,10 +6,12 @@
 #include <QMainWindow>
 //#include <QtGui/QWindow>
 #include <QDialog>
-#include <QtGui/QOpenGLFunctions>
+#include <QColorDialog>
+#include <QOpenGLFunctions>
 #include "ui_MainWindow.h"
 #include "ui_About.h"
 
+const QString COLOR_STYLE("QPushButton { background-color : %1;}");
 
 class MainWindow : public QMainWindow, protected QOpenGLFunctions
 {
@@ -19,22 +21,13 @@ public:
 	MainWindow(QWidget *parent = 0);
 	~MainWindow();
 
-	/*virtual void render(QPainter *painter);
-	virtual void render();
-
-	virtual void initialize();
-
-	void setAnimating(bool animating);*/
-
-public slots:
-	/*void renderLater();
-	void renderNow();*/
-void on_actionAbout_triggered();
-//void aboutwindow();
+	public slots:
+	void on_actionAbout_triggered();
+	//void aboutwindow();
 protected:
-	//bool event(QEvent *event) Q_DECL_OVERRIDE;
-	//void exposeEvent(QExposeEvent *event) Q_DECL_OVERRIDE;
 	void closeEvent(QCloseEvent *e);
+private:
+	void pickColor(QColor* targ, QPushButton* src);
 private:
 	bool m_update_pending;
 	bool m_animating;

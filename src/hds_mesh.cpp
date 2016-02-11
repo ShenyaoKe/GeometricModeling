@@ -126,6 +126,11 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 		heSet.insert(hef);
 		heMap.insert(make_pair(hef->index, hef));
 	}
+	/*for (auto face : faceSet)
+	{
+		face->index = HDS_Face::assignIndex();
+		faceMap.insert(make_pair(face->index, face));
+	}*/
 	//reIndexing();
 #ifdef _DEBUG
 	end_time = clock();
@@ -636,7 +641,7 @@ void HDS_Mesh::exportVBO(
 
 void HDS_Mesh::exportIndexedVBO(
 	vector<float>* vtx_array, vector<float>* uv_array,
-	vector<float>* norm_array, vector<ushort>* idx_array) const
+	vector<float>* norm_array, vector<uint>* idx_array, int order) const
 {
 	bool has_vert(false), has_texcoord(false), has_normal(false), has_uid(false);
 
@@ -686,14 +691,32 @@ void HDS_Mesh::exportIndexedVBO(
 			curHE = curHE->next;
 		} while (curHE->next != he);
 	}*/
-	for (auto face : faceSet)
+	if (order == 0)// index independent
 	{
-		he_t* he = face->he;
-		he_t* curHE = he;
-		do
+		for (auto face : faceSet)
 		{
-			idx_array->push_back(static_cast<ushort>(curHE->v->index));
-			curHE = curHE->next;
-		} while (curHE != he);
+			he_t* he = face->he;
+			he_t* curHE = he;
+			do
+			{
+				idx_array->push_back(static_cast<uint>(curHE->v->index));
+				curHE = curHE->next;
+			} while (curHE != he);
+		}
 	}
+	else// Index dependent
+	{
+		for (int i = 0; i < faceMap.size() ; i++)
+		{
+			face_t* face = faceMap.at(i);
+			he_t* he = face->he;
+			he_t* curHE = he;
+			do
+			{
+				idx_array->push_back(static_cast<uint>(curHE->v->index));
+				curHE = curHE->next;
+			} while (curHE != he);
+		}
+	}
+	
 }
