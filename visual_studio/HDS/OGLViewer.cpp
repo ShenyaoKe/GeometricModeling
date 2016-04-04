@@ -4,6 +4,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, subd_lv(0)
 	, m_selectMode(OBJECT_SELECT)
+	, loader("../../scene/obj/monsterfrog.obj")
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -13,27 +14,14 @@ OGLViewer::OGLViewer(QWidget *parent)
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 
-	// Read obj file
-	//box_mesh = new Mesh("../../scene/obj/cube_large.obj");
-	//model_mesh = new Mesh("../../scene/obj/monkey.obj");
-#ifdef _DEBUG
-	hds_model = new HDS_Mesh("../../scene/obj/monsterfrog.obj");
-#else
-	hds_model = new HDS_Mesh("quad_cube.obj");
-#endif
-	//hds_box->reIndexing();
-	//hds_box->validate();
-	subd_mesh = new Subdivision(0, hds_model);
+	
 
 	resetCamera();
 }
 
 OGLViewer::~OGLViewer()
 {
-	delete model_mesh;
-	model_mesh = nullptr;
 	delete view_cam;
-	view_cam = nullptr;
 }
 /************************************************************************/
 /* OpenGL Rendering Modules                                             */
@@ -72,9 +60,8 @@ void OGLViewer::initializeGL()
 	mesh_shader = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
 
 	// Export vbo for shaders
-	hds_model->exportIndexedVBO(&mesh_verts, nullptr, nullptr, &mesh_idxs);
-	subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
-
+	//hds_model->exportIndexedVBO(&mesh_verts, nullptr, nullptr, &mesh_idxs);
+	
 	bindMesh();
 
 	// Get uniform variable location
@@ -86,6 +73,7 @@ void OGLViewer::initializeGL()
 	mesh_shader->add_uniformv("proj_matrix");
 }
 
+/*
 void OGLViewer::loadOBJ()
 {
 	QString filename = QFileDialog::getOpenFileName(
@@ -113,30 +101,8 @@ void OGLViewer::saveOBJ()
 		filename.append("_"+QString::number(subd_lv)+".obj");
 		subd_mesh->saveAsOBJ(subd_lv, filename.toUtf8().constData());
 	}
-}
+}*/
 
-void OGLViewer::smoothMesh()
-{
-	if (subd_lv >= 4)
-	{
-		int ret = QMessageBox::warning(this, tr("Warning"),
-			tr("Current mesh is smoothed more than level 4!\n"
-			"Do you still want to smooth it?"),
-			QMessageBox::Yes | QMessageBox::Cancel);
-		if (ret == QMessageBox::Cancel)
-		{
-			return;
-		}
-	}
-	subd_mesh->subdivide();
-	subd_lv = subd_mesh->getLevel();
-	subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
-
-	bindMesh();
-
-	emit levelChanged(subd_lv);
-	update();
-}
 
 void OGLViewer::bindMesh()
 {
@@ -227,12 +193,6 @@ void OGLViewer::paintGL()
 
 	}
 }
-// Redraw function
-void OGLViewer::paintEvent(QPaintEvent *e)
-{
-	// Draw current frame
-	paintGL();
-}
 // Resize function
 void OGLViewer::resizeGL(int w, int h)
 {
@@ -249,23 +209,6 @@ void OGLViewer::keyPressEvent(QKeyEvent *e)
 	if (e->key() == Qt::Key_Home)
 	{
 		initParas();
-	}
-	// Subdiv
-	else if (e->key() == Qt::Key_Plus)
-	{
-		//offset = min(++offset, (int)box_idxs.size() / 3 - 1);
-		subd_lv = min(++subd_lv, (int)subd_mesh->getLevel());
-		subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
-		bindMesh();
-
-		emit levelChanged(subd_lv);
-	}
-	else if (e->key() == Qt::Key_Minus)
-	{
-		subd_lv = max(--subd_lv, 0);
-		subd_mesh->exportIndexedVBO(subd_lv, &mesh_verts, nullptr, nullptr, &mesh_idxs);
-		bindMesh();
-		emit levelChanged(subd_lv);
 	}
 	else if (e->key() == Qt::Key_Left)
 	{

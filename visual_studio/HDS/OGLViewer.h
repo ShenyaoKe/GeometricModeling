@@ -22,22 +22,6 @@
 #include "Math/Matrix4D.h"
 #include "Camera/perspCamera.h"
 #include "hds_mesh.h"
-#include "Subdivision.h"
-
-static Mesh *model_mesh;
-static GLfloat* model_verts;// vertices vbo
-static GLfloat* model_uvs;// Texture coordinates vbo
-static GLfloat* model_norms;// Normal coordinates vbo
-static GLint* model_uids;
-static int model_vbo_size;// Triangle face numbers
-
-static HDS_Mesh* hds_model;
-static Mesh *mesh_model;// Display object
-static Subdivision* subd_mesh;
-static vector<GLfloat> mesh_verts;
-static vector<GLuint> mesh_idxs;
-//static GLfloat* box_uvs;// Texture coordinates vbo
-//static GLfloat* box_norms;// Normal coordinates vbo
 
 static GLSLProgram* point_shader;// OpenGL shader program
 static GLSLProgram* wireframe_shader;// OpenGL shader program
@@ -79,16 +63,14 @@ public:
 	public slots:
 	void resetCamera();
 	void initParas();
-	void loadOBJ();
-	void saveOBJ();
-	void smoothMesh();
+	/*void loadOBJ();
+	void saveOBJ();*/
 signals:
 	void levelChanged(int level);
 protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;
 	void resizeGL(int w, int h) Q_DECL_OVERRIDE;
-	void paintEvent(QPaintEvent *e) Q_DECL_OVERRIDE;
 
 	void keyPressEvent(QKeyEvent *e) Q_DECL_OVERRIDE;
 	void mousePressEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
@@ -113,6 +95,12 @@ private: // OpenGL variables
 	bool showPiece = false;
 	bool drawPoint = false;
 	bool drawWireFrame = false;
+
+	MeshLoader loader;
+
+	vector<GLfloat> mesh_verts;
+	vector<GLuint> mesh_idxs;
+
 	vector<GLuint> vao_handles;
 	GLuint subd_vbo;
 	GLuint subd_ibo;

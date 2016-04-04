@@ -1,8 +1,11 @@
 #include "hds_mesh.h"
 
 using namespace std;
-
-HDS_Mesh::HDS_Mesh(const string &filename)
+/*
+#ifndef _ENABLE_CLOCK
+#define  _ENABLE_CLOCK 0
+#endif*/
+HDS_Mesh::HDS_Mesh(const char* filename)
 {
 #ifdef _DEBUG
 	clock_t start_time, end_time;//Timer
@@ -44,25 +47,25 @@ HDS_Mesh::HDS_Mesh(const string &filename)
 	// Generate HDS_Face
 	map<pair<int, int>, he_t*> heUnassigned;
 	auto unassignedVerts = vertMap;
-	for (auto fid : meshIndex.fids)
+	for (auto fid : meshIndex.polys)
 	{
 		face_t* face = new face_t;
 		face->index = HDS_Face::assignIndex();
 		faceSet.insert(face);
 		faceMap.insert(make_pair(face->index, face));
-		int vnum = face->vnum = fid.vtx.size();
+		int vnum = face->vnum = fid->v.size();
 		
 		he_t* prevHE = nullptr;
 		he_t* beginHE = nullptr;
 		for (int i = 0; i < vnum; i++)
 		{
 			// Vertex attributes
-			int curVID = fid.vtx[i] - 1;
+			int curVID = fid->v[i] - 1;
 			if (curVID < 0)
 			{
 				continue;
 			}
-			int nextVID = fid.vtx[(i + 1) % vnum] - 1;
+			int nextVID = fid->v[(i + 1) % vnum] - 1;
 			/*int curSNID = fid.n[i] - 1;
 			int curSUVID = fid.uv[i] - 1;*/
 			vert_t* curVertex = vertMap[curVID];

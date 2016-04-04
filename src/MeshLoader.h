@@ -1,8 +1,30 @@
 #pragma once
+#ifdef _MSC_VER
+#pragma warning (disable:4996)
+#endif // _MSVC
 
 #include "common.h"
 #include <QVector2D>
 #include <QVector3D>
+
+struct PolyIndex
+{
+	vector<int32_t> v;
+	vector<int32_t> uv;
+	vector<int32_t> n;
+	void push_back(int32_t* ids)
+	{
+		v.push_back(ids[0]);
+		if (ids[1] > 0)
+		{
+			uv.push_back(ids[1]);
+		}
+		if (ids[2] > 0)
+		{
+			uv.push_back(ids[2]);
+		}
+	}
+};
 
 struct FaceIndex
 {
@@ -49,15 +71,32 @@ struct QuadFaceIndex
 class MeshLoader
 {
 public:
-	MeshLoader(const string &filename);
+	//MeshLoader(const string &filename);
+	MeshLoader(const char* filename);
 	~MeshLoader();
+	
+	enum index_t : uint8_t
+	{
+		V = 1 << 0,
+		UV = 1 << 1,
+		NORM = 1 << 2,
+		VT = V | UV,
+		VN = V | NORM,
+		VTN = V | UV | NORM
+	};
 private:
+	
+
+	char* readfile(const char* filename);
+	index_t facetype(const char* str, int* val);
+
 	friend class HDS_Mesh;
 private:
 	vector<QVector3D> vertices;
 	vector<QVector2D> uvs;
 	vector<QVector3D> normals;
 	//vector<QuadFaceIndex> fids;
-	vector<FaceIndex> fids;
+	//vector<FaceIndex> fids;
+	vector<PolyIndex*> polys;
 };
 

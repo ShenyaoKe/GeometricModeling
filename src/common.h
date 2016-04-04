@@ -7,8 +7,11 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
-#include <math.h>
-#include <assert.h>
+#include <ctime>
+#include <cstring>
+
+#include <cmath>
+#include <cassert>
 #include <string>
 #include <list>
 #include <vector>
@@ -27,12 +30,12 @@
 #include <numeric>
 #include <memory>
 #include <limits>
-#include <time.h>
 
 using namespace std;
 
 
+/*
 typedef unsigned int uint;
-typedef unsigned short ushort;
+typedef unsigned short ushort;*/
 
 #endif // COMMON_H

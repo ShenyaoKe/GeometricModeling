@@ -6,19 +6,23 @@
 
 struct FaceIndex
 {
-	vector<int> vtx;	//vertex
-	vector<int> uv;	//texture coordinate
-	vector<int> n;	//normal
-	void printInfo() const
+	vector<int32_t> v;
+	vector<int32_t> uv;
+	vector<int32_t> n;
+	void push_back(int32_t* ids)
 	{
-		cout << "Quad face index: ";
-		for (int i = 0; i < vtx.size(); i++)
+		v.push_back(ids[0]);
+		if (ids[1] > 0)
 		{
-			cout << vtx[i] << "/" << uv[i] << "/" << n[i] << "\t";
+			uv.push_back(ids[1]);
 		}
-		cout << endl;
+		if (ids[2] > 0)
+		{
+			uv.push_back(ids[2]);
+		}
 	}
 };
+
 struct QuadFaceIndex
 {
 	int vtx[4];	//vertex

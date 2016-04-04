@@ -27,7 +27,7 @@ public:
 	};
 
 	//HDS_Mesh();
-	HDS_Mesh(const string &filename);
+	HDS_Mesh(const char* filename);
 	HDS_Mesh(const HDS_Mesh &mesh);
 	~HDS_Mesh();
 
