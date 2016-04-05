@@ -12,56 +12,9 @@ MeshLoader::MeshLoader(const char* filename)
 //#endif // _DEBUG
 }
 
-/*
-MeshLoader::MeshLoader(const string &filename)
-{
-	errno_t err;
-	FILE *file;
-	err = fopen_s(&file, filename.c_str(), "r");
-	if (err != 0)
-	{
-		cout << "Unable to open the file!" << endl;
-		return;
-	}
-	while (true)
-	{
-		char lineHeader[128];
-		int res = fscanf_s(file, "%s", &lineHeader, _countof(lineHeader));
-		if (res == EOF)
-		{
-			break;
-		}
-		if (strcmp(lineHeader, "v") == 0)
-		{
-			double x, y, z;
-			fscanf_s(file, " %lf %lf %lf\n", &x, &y, &z);
-			vertices.push_back(QVector3D(x, y, z));
-		}
-		else if (strcmp(lineHeader, "f") == 0)
-		{
-			//QuadFaceIndex faceIndex;
-			int idxBuf[12] = {};
-			// Does not support empty uv or normal
-
-			fscanf_s(file, " %d %d %d\n",
-				&idxBuf[0], &idxBuf[3], &idxBuf[6]);
-			fids.push_back(FaceIndex(idxBuf, 3));
-			
-		}
-		else
-		{
-			// Probably a comment, eat up the rest of the line
-			char stupidBuffer[1000];
-			fgets(stupidBuffer, 1000, file);
-		}
-	}
-	fclose(file);
-}
-*/
-
-
 MeshLoader::~MeshLoader()
 {
+	release();
 }
 
 void MeshLoader::release()
@@ -105,24 +58,14 @@ void MeshLoader::load(const char* filename)
 			if (strcmp(lineHeader, "v") == 0)
 			{
 				sscanf(subStr, "%f %f %f%n", val, val + 1, val + 2, &offset);
-				//err = sscanf(subStr, "%f %f %f%n", val, val + 1, val + 2, &offset);
-				//vertices.push_back(QVector3D(val[0], val[1], val[2]));
-				//vertices.insert(vertices.end(), val, val + 3);
-				vertices.push_back(val[0]);
-				vertices.push_back(val[1]);
-				vertices.push_back(val[2]);
+				vertices.insert(vertices.end(), val, val + 3);
+				
 				subStr += offset + 1;
 			}
 			// Texture Coordinate
 			else if (strcmp(lineHeader, "vt") == 0)
 			{
-				//float val[2];
-				err = sscanf(subStr, "%f %f%n", val, val + 1, &offset);
-				//uvs.push_back(QVector2D(val[0], val[1]));
-				//uvs.insert(uvs.end(), val, val + 2);
-
-				uvs.push_back(val[0]);
-				uvs.push_back(val[1]);
+				err = sscanf(subStr, "%f %f%n", val, val + 1, &offset);uvs.insert(uvs.end(), val, val + 2);
 				subStr += offset + 1;
 			}
 			// Vertex Normal
@@ -130,11 +73,8 @@ void MeshLoader::load(const char* filename)
 			{
 				//float val[3];
 				err = sscanf(subStr, "%f %f %f%n", val, val + 1, val + 2, &offset);
-				//normals.push_back(QVector3D(val[0], val[1], val[2]));
-				//normals.insert(normals.end(), val, val + 3);
-				normals.push_back(val[0]);
-				normals.push_back(val[1]);
-				normals.push_back(val[2]);
+				normals.insert(normals.end(), val, val + 3);
+				
 				subStr += offset + 1;
 			}
 			// Face Index
@@ -202,9 +142,8 @@ void MeshLoader::load(const char* filename)
 			// Others
 			else
 			{
-				// skip everything except \n
+				// skip everything except \n and \r
 				err = sscanf(subStr, "%[^\r\n]%n", &trash, &offset);
-				//cout << lineHeader << trash << "\n";
 				subStr += offset + 1;
 			}
 
@@ -241,18 +180,12 @@ void MeshLoader::load_from_file(const char * filename)
 		{
 			fscanf(fp, "%f %f %f\n", val, val + 1, val + 2);
 			vertices.insert(vertices.end(), val, val + 3);
-			/*vertices.push_back(val[0]);
-			vertices.push_back(val[1]);
-			vertices.push_back(val[2]);*/
 		}
 		// Texture Coordinate
 		else if (strcmp(lineHeader, "vt") == 0)
 		{
 			fscanf(fp, "%f %f\n", val, val + 1);
 			uvs.insert(uvs.end(), val, val + 2);
-
-			/*uvs.push_back(val[0]);
-			uvs.push_back(val[1]);*/
 		}
 		// Vertex Normal
 		else if (strcmp(lineHeader, "vn") == 0)
@@ -260,9 +193,6 @@ void MeshLoader::load_from_file(const char * filename)
 			//float val[3];
 			fscanf(fp, "%f %f %f\n", val, val + 1, val + 2);
 			normals.insert(normals.end(), val, val + 3);
-			/*normals.push_back(val[0]);
-			normals.push_back(val[1]);
-			normals.push_back(val[2]);*/
 		}
 		// Face Index
 		else if (strcmp(lineHeader, "f") == 0)
@@ -326,9 +256,8 @@ void MeshLoader::load_from_file(const char * filename)
 		// Others
 		else
 		{
-			// skip everything except \n
+			// skip everything except \n or \r
 			fscanf(fp, "%[^\r\n]", &buff);
-			//cout << lineHeader << trash << "\n";
 		}
 
 	}
@@ -341,13 +270,7 @@ void MeshLoader::exportVBO(floats_t * verts, floats_t * texcoords, floats_t * no
 	if (verts != nullptr)
 	{
 		verts->clear();
-		verts->reserve(vertices.size() * 3);
-		/*for (auto v : vertices)
-		{
-			verts->push_back(v.x());
-			verts->push_back(v.y());
-			verts->push_back(v.z());
-		}*/
+		verts->reserve(vertices.size());
 		verts->insert(verts->end(), vertices.begin(), vertices.end());
 	}
 	if (fids != nullptr)
@@ -356,17 +279,13 @@ void MeshLoader::exportVBO(floats_t * verts, floats_t * texcoords, floats_t * no
 		fids->reserve(polys.size() * 3);
 		for (auto poly : polys)
 		{
-			//uint32_t size = poly->size;
-			auto vid = poly->v;
-			/*if (vid)
+			auto& vid = poly->v;
+			for (int i = 1; i < poly->v.size() - 1;)
 			{
-			}*/
-				for (int i = 1; i < poly->v.size() - 1;)
-				{
-					fids->push_back(vid[0]);
-					fids->push_back(vid[i++]);
-					fids->push_back(vid[i]);
-				}
+				fids->push_back(vid[0]);
+				fids->push_back(vid[i++]);
+				fids->push_back(vid[i]);
+			}
 		}
 	}
 }

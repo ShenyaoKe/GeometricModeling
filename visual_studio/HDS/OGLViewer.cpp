@@ -4,7 +4,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, subd_lv(0)
 	, m_selectMode(OBJECT_SELECT)
-	, loader("../../scene/obj/bunny.obj")
+	, loader("../../scene/obj/monsterfrog.obj")
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -13,8 +13,6 @@ OGLViewer::OGLViewer(QWidget *parent)
 	format.setVersion(4, 5);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
-
-	
 
 	resetCamera();
 }

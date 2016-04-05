@@ -1,11 +1,9 @@
-#pragma once
 #ifdef _MSC_VER
+#pragma once
 #pragma warning (disable:4996)
 #endif // _MSVC
 
 #include "common.h"
-#include <QVector2D>
-#include <QVector3D>
 
 struct PolyIndex
 {
@@ -26,53 +24,9 @@ struct PolyIndex
 		}
 	}
 };
-
-struct FaceIndex
-{
-	vector<int> vtx;	//vertex
-	vector<int> uv;	//texture coordinate
-	vector<int> n;	//normal
-	FaceIndex(int const* indices , int len)
-	{
-		vtx.reserve(len);
-		uv.reserve(len);
-		n.reserve(len);
-		for (int i = 0; i < len; i++)
-		{
-			vtx.push_back(*indices++);
-			uv.push_back(*indices++);
-			n.push_back(*indices++);
-		}
-	}
-	void printInfo() const
-	{
-		cout << "Quad face index: ";
-		for (int i = 0; i < vtx.size(); i++)
-		{
-			cout << vtx[i] << "/" << uv[i] << "/" << n[i] << "\t";
-		}
-		cout << endl;
-	}
-};
-struct QuadFaceIndex
-{
-	int vtx[4] = {};	//vertex
-	int uv[4] = {};	//texture coordinate
-	int n[4] = {};	//normal
-	void printInfo() const
-	{
-		cout << "Quad face index: ";
-		for (int i = 0; i < 4; i++)
-		{
-			cout << vtx[i] << "/" << uv[i] << "/" << n[i] << "\t";
-		}
-		cout << endl;
-	}
-};
 class MeshLoader
 {
 public:
-	//MeshLoader(const string &filename);
 	MeshLoader(const char* filename);
 	~MeshLoader();
 	
@@ -99,11 +53,8 @@ private:
 
 	friend class HDS_Mesh;
 private:
-	vector<float> vertices;
-	vector<float> uvs;
-	vector<float> normals;
-	//vector<QuadFaceIndex> fids;
-	//vector<FaceIndex> fids;
+	floats_t vertices;
+	floats_t uvs;
+	floats_t normals;
 	vector<PolyIndex*> polys;
 };
-
