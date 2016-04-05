@@ -26,7 +26,8 @@ HDS_Mesh::HDS_Mesh(const char* filename)
 	// Generate HDS_Vetex
 	for (int i = 0; i < vertices.size(); i++)
 	{
-		vert_t* v = new vert_t(vertices[i]);
+		int pPtr = i * 3;
+		vert_t* v = new vert_t(QVector3D(vertices[pPtr], vertices[pPtr + 1], vertices[pPtr + 2]));
 		v->index = vert_t::assignIndex();
 		vertSet.insert(v);
 		vertMap.insert(make_pair(i, v));

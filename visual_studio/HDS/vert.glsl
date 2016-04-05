@@ -4,13 +4,6 @@ in layout(location = 1) vec3 vn;
 in layout(location = 2) vec2 uv;
 
 uniform mat4 view_matrix, proj_matrix;
-uniform mat4 model_matrix = mat4(
-								1, 0, 0, 0,
-								0, 1, 0, 0,
-								0, 0, 1, 0,
-								0, 0, 0, 1);
-out vec3 normal;
-out vec2 TexCoord;
 
 out vec3 position_eye, normal_eye;
 

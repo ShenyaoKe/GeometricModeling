@@ -9,19 +9,20 @@
 
 struct PolyIndex
 {
-	vector<int32_t> v;
-	vector<int32_t> uv;
-	vector<int32_t> n;
-	void push_back(int32_t* ids)
+	uint32_t size;
+	ui32s_t v;
+	ui32s_t uv;
+	ui32s_t n;
+	void push_back(uint32_t* ids)
 	{
-		v.push_back(ids[0]);
+		v.push_back(ids[0] - 1);
 		if (ids[1] > 0)
 		{
-			uv.push_back(ids[1]);
+			uv.push_back(ids[1] - 1);
 		}
 		if (ids[2] > 0)
 		{
-			uv.push_back(ids[2]);
+			uv.push_back(ids[2] - 1);
 		}
 	}
 };
@@ -84,17 +85,22 @@ public:
 		VN = V | NORM,
 		VTN = V | UV | NORM
 	};
-private:
-	
 
+	void release();
+	void load(const char* filename);
+
+	void exportVBO(floats_t* verts = nullptr,
+		floats_t* texcoords = nullptr,
+		floats_t* norms = nullptr, ui32s_t* fids = nullptr) const;
+private:
 	char* readfile(const char* filename);
-	index_t facetype(const char* str, int* val);
+	index_t facetype(const char* str, uint32_t* val);
 
 	friend class HDS_Mesh;
 private:
-	vector<QVector3D> vertices;
-	vector<QVector2D> uvs;
-	vector<QVector3D> normals;
+	vector<float> vertices;
+	vector<float> uvs;
+	vector<float> normals;
 	//vector<QuadFaceIndex> fids;
 	//vector<FaceIndex> fids;
 	vector<PolyIndex*> polys;

@@ -23,24 +23,12 @@
 #include "Camera/perspCamera.h"
 #include "hds_mesh.h"
 
-static GLSLProgram* point_shader;// OpenGL shader program
-static GLSLProgram* wireframe_shader;// OpenGL shader program
-static GLSLProgram* mesh_shader;// OpenGL shader program
+static GLSLProgram* triangle_shader;// OpenGL shader program
 //static Matrix4D matrix;// Transform matrix
 
 static GLfloat model_mat[16];// Uniform matrix buffer
 static GLfloat view_mat[16];
 static GLfloat proj_mat[16];
-static int sel_id_loc;
-//////////////////////////////////////////////////////////////////////////
-// Acceleration
-//////////////////////////////////////////////////////////////////////////
-static vector<Shape*> triangleList;
-static KdTreeAccel *mytree;
-static ImageData* img;
-//////////////////////////////////////////////////////////////////////////
-// Sphere Attribute
-//////////////////////////////////////////////////////////////////////////
 
 const double eps = 5e-4;
 
@@ -102,9 +90,9 @@ private: // OpenGL variables
 	vector<GLuint> mesh_idxs;
 
 	vector<GLuint> vao_handles;
-	GLuint subd_vbo;
-	GLuint subd_ibo;
-	GLuint subd_vao;
+	GLuint mesh_vbo;
+	GLuint mesh_ibo;
+	GLuint mesh_vao;
 
 	friend class MainWindow;
 };

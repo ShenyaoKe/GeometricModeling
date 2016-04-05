@@ -1,10 +1,10 @@
-#include "OGLViewer.h"
+﻿#include "OGLViewer.h"
 
 OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, subd_lv(0)
 	, m_selectMode(OBJECT_SELECT)
-	, loader("../../scene/obj/monsterfrog.obj")
+	, loader("../../scene/obj/happy.obj")
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
@@ -55,22 +55,19 @@ void OGLViewer::initializeGL()
 	//////////////////////////////////////////////////////////////////////////
 
 	// Create shader files
-	point_shader = new GLSLProgram("point_vs.glsl", "point_fs.glsl");
-	wireframe_shader = new GLSLProgram("wireframe_vs.glsl", "wireframe_fs.glsl", "wireframe_gs.glsl");
-	mesh_shader = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
+	triangle_shader = new GLSLProgram("triangle_vs.glsl", "triangle_fs.glsl", "triangle_gs.glsl");
+	//mesh_shader = new GLSLProgram("quad_vs.glsl", "quad_fs.glsl", "quad_gs.glsl");
 
 	// Export vbo for shaders
+	loader.exportVBO(&mesh_verts, nullptr, nullptr, &mesh_idxs);
+	offset = mesh_idxs.size() - 3;
 	//hds_model->exportIndexedVBO(&mesh_verts, nullptr, nullptr, &mesh_idxs);
 	
 	bindMesh();
 
 	// Get uniform variable location
-	point_shader->add_uniformv("view_matrix");
-	point_shader->add_uniformv("proj_matrix");; // WorldToCamera matrix
-	wireframe_shader->add_uniformv("view_matrix");
-	wireframe_shader->add_uniformv("proj_matrix");
-	mesh_shader->add_uniformv("view_matrix");
-	mesh_shader->add_uniformv("proj_matrix");
+	triangle_shader->add_uniformv("view_matrix");
+	triangle_shader->add_uniformv("proj_matrix");
 }
 
 /*
@@ -106,23 +103,23 @@ void OGLViewer::saveOBJ()
 
 void OGLViewer::bindMesh()
 {
-	glDeleteVertexArrays(1, &subd_vao);
-	glDeleteBuffers(1, &subd_vbo);
-	glDeleteBuffers(1, &subd_ibo);
+	glDeleteVertexArrays(1, &mesh_vao);
+	glDeleteBuffers(1, &mesh_vbo);
+	glDeleteBuffers(1, &mesh_ibo);
 
 	// Bind VAO
-	glGenVertexArrays(1, &subd_vao);
-	glBindVertexArray(subd_vao);
+	glGenVertexArrays(1, &mesh_vao);
+	glBindVertexArray(mesh_vao);
 
-	glGenBuffers(1, &subd_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, subd_vbo);
+	glGenBuffers(1, &mesh_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * mesh_verts.size(), &mesh_verts[0], GL_STATIC_DRAW);
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 	glEnableVertexAttribArray(0);
 
-	glGenBuffers(1, &subd_ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subd_ibo);
+	glGenBuffers(1, &mesh_ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * mesh_idxs.size(), &mesh_idxs[0], GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
@@ -140,58 +137,17 @@ void OGLViewer::paintGL()
 
 	
 	// Model
-	/*if (drawWireFrame)
-	{
-		glDisable(GL_CULL_FACE);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	}
-	else
-	{*/
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK); // cull back face
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//}
-	bindMesh();
-	glBindVertexArray(subd_vao);
+	glBindVertexArray(mesh_vao);
 	
-	/*if (showPiece)
-	{
-		glDrawElements(GL_LINES_ADJACENCY, 4, GL_UNSIGNED_INT, 0);
-		
-	} 
-	else*/
-	{
-		mesh_shader->use_program();
-		glUniformMatrix4fv((*mesh_shader)("view_matrix"), 1, GL_FALSE, view_mat);
-		glUniformMatrix4fv((*mesh_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-		glDrawElements(GL_LINES_ADJACENCY, mesh_idxs.size(), GL_UNSIGNED_INT, 0);
-		mesh_shader->unuse();
-
-		if (drawWireFrame)
-		{
-			wireframe_shader->use_program();
-			glUniformMatrix4fv((*wireframe_shader)("view_matrix"), 1, GL_FALSE, view_mat);
-			glUniformMatrix4fv((*wireframe_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-			glLineWidth(2.f);
-			glDrawElements(GL_LINES_ADJACENCY, mesh_idxs.size(), GL_UNSIGNED_INT, 0);
-			wireframe_shader->unuse();
-		}
-		
-		if (drawPoint)
-		{
-			glBindVertexArray(0);
-			glBindBuffer(GL_ARRAY_BUFFER, subd_vbo);
-
-			point_shader->use_program();
-			glUniformMatrix4fv((*point_shader)("view_matrix"), 1, GL_FALSE, view_mat);
-			glUniformMatrix4fv((*point_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
-			glPointSize(6.0);
-			glDrawArrays(GL_POINTS, 0, mesh_verts.size());
-			point_shader->unuse();
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-		}
-
-	}
+	triangle_shader->use_program();
+	glUniformMatrix4fv((*triangle_shader)("view_matrix"), 1, GL_FALSE, view_mat);
+	glUniformMatrix4fv((*triangle_shader)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDrawElements(GL_TRIANGLES, mesh_idxs.size(), GL_UNSIGNED_INT, 0);
+	/*glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(offset * sizeof(GLuint)));*/
+	triangle_shader->unuse();
 }
 // Resize function
 void OGLViewer::resizeGL(int w, int h)
@@ -206,29 +162,17 @@ void OGLViewer::resizeGL(int w, int h)
 /************************************************************************/
 void OGLViewer::keyPressEvent(QKeyEvent *e)
 {
-	if (e->key() == Qt::Key_Home)
+	if (e->key() == Qt::Key_Left)
 	{
-		initParas();
-	}
-	else if (e->key() == Qt::Key_Left)
-	{
-		offset = max(--offset, 0);
+		offset -= 3;
+		offset = max(offset, 0);
+
+		cout << "indices:\t" << mesh_idxs[offset] << ", " << mesh_idxs[offset + 1] << ", " << mesh_idxs[offset + 2] << endl;
 	}
 	else if (e->key() == Qt::Key_Right)
 	{
-		offset = min(++offset, (int)mesh_idxs.size() / 3 - 1);
-	}
-	else if (e->key() == Qt::Key_1)
-	{
-		showPiece = !showPiece;
-	}
-	else if (e->key() == Qt::Key_2)
-	{
-		drawPoint = !drawPoint;
-	}
-	else if (e->key() == Qt::Key_3)
-	{
-		drawWireFrame = !drawWireFrame;
+		offset += 3;
+		offset = min(offset, (int)mesh_idxs.size() - 3);
 	}
 	// Save frame buffer
 	else if (e->key() == Qt::Key_P && e->modifiers() == Qt::ControlModifier)
