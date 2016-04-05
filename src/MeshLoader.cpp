@@ -5,9 +5,8 @@ MeshLoader::MeshLoader(const char* filename)
 //#ifdef _DEBUG
 	clock_t startTime = clock();
 //#endif // _DEBUG
-	std::ios::sync_with_stdio(false);
-	load(filename);
-
+	//load(filename);
+	load_from_file(filename);
 //#ifdef _DEBUG
 	cout << "Loding Time of OBJ File " << filename << ":\t" << (float)(clock() - startTime) / CLOCKS_PER_SEC << "s" << endl;//Timer
 //#endif // _DEBUG
@@ -215,6 +214,128 @@ void MeshLoader::load(const char* filename)
 	}
 }
 
+void MeshLoader::load_from_file(const char * filename)
+{
+	FILE* fp = fopen(filename, "r");
+	if (fp == nullptr)
+	{
+		return;
+	}
+	int err;
+	char buff[255] = {};
+	char lineHeader[2] = {};
+	float val[3] = {};
+	uint32_t indices[3];
+	char endflg;
+
+	while (true)
+	{
+		lineHeader[0] = lineHeader[1] = 0;
+		err = fscanf(fp, "%2s", &lineHeader);
+		if (err == EOF)
+		{
+			break;
+		}
+		// Vertex
+		if (strcmp(lineHeader, "v") == 0)
+		{
+			fscanf(fp, "%f %f %f\n", val, val + 1, val + 2);
+			vertices.insert(vertices.end(), val, val + 3);
+			/*vertices.push_back(val[0]);
+			vertices.push_back(val[1]);
+			vertices.push_back(val[2]);*/
+		}
+		// Texture Coordinate
+		else if (strcmp(lineHeader, "vt") == 0)
+		{
+			fscanf(fp, "%f %f\n", val, val + 1);
+			uvs.insert(uvs.end(), val, val + 2);
+
+			/*uvs.push_back(val[0]);
+			uvs.push_back(val[1]);*/
+		}
+		// Vertex Normal
+		else if (strcmp(lineHeader, "vn") == 0)
+		{
+			//float val[3];
+			fscanf(fp, "%f %f %f\n", val, val + 1, val + 2);
+			normals.insert(normals.end(), val, val + 3);
+			/*normals.push_back(val[0]);
+			normals.push_back(val[1]);
+			normals.push_back(val[2]);*/
+		}
+		// Face Index
+		else if (strcmp(lineHeader, "f") == 0)
+		{
+			//cout << "loading face\n";
+			PolyIndex* fid = new PolyIndex;
+			err = fscanf(fp, "%s", &buff);
+			indices[1] = indices[2] = 0;
+			index_t ft = facetype(buff, indices);
+			fid->push_back(indices);
+			endflg = fgetc(fp);
+			switch (ft)
+			{
+			case VTN://111
+				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				{
+					ungetc(endflg, fp);
+					fscanf(fp, "%d/%d/%d", indices, indices + 1, indices + 2);
+					fid->push_back(indices);
+					endflg = fgetc(fp);
+				}
+				break;
+			case VT://011
+				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				{
+					ungetc(endflg, fp);
+					fscanf(fp, "%d/%d", indices, indices + 1);
+					fid->push_back(indices);
+					endflg = fgetc(fp);
+				}
+				break;
+			case VN://101
+				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				{
+					ungetc(endflg, fp);
+					fscanf(fp, "%d//%d", indices, indices + 2);
+					fid->push_back(indices);
+					endflg = fgetc(fp);
+				}
+				break;
+			case V://001
+				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				{
+					ungetc(endflg, fp);
+					fscanf(fp, "%d", indices);
+					fid->push_back(indices);
+					endflg = fgetc(fp);
+				}
+				break;
+			default:
+				break;
+			}
+			fid->size = fid->v.size();
+			polys.push_back(fid);
+		}
+		// Comment
+		else if (strcmp(lineHeader, "#") == 0)
+		{
+			fscanf(fp, "%[^\r\n]", &buff);
+		}
+		// Others
+		else
+		{
+			// skip everything except \n
+			fscanf(fp, "%[^\r\n]", &buff);
+			//cout << lineHeader << trash << "\n";
+		}
+
+	}
+
+	fclose(fp);
+}
+
 void MeshLoader::exportVBO(floats_t * verts, floats_t * texcoords, floats_t * norms, ui32s_t * fids) const
 {
 	if (verts != nullptr)
@@ -266,17 +387,10 @@ char* MeshLoader::readfile(const char* filename)
 	fseek(fp, 0L, SEEK_SET);
 
 	char* cstr = new char[fsize + 1]();
-	//fread_s(cstr, sizeof(char) * fsize, sizeof(char), fsize, fp);
+#ifdef _MSC_VER
+	fread_s(cstr, sizeof(char) * fsize, sizeof(char), fsize, fp);
+#else
 	fread(cstr, sizeof(char), fsize, fp);
-#if 0
-	clock_t endt = clock();
-	cout << "byte size" << fsize
-		<< "\ntime dur:" << endt - start << endl;
-
-	for (int i = 0; i <= fsize; i++)
-	{
-		cout << i << ":\t" << (int)cstr[i] << endl;
-	}
 #endif
 
 	fclose(fp);

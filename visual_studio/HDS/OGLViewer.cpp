@@ -4,7 +4,7 @@ OGLViewer::OGLViewer(QWidget *parent)
 	: QOpenGLWidget(parent), tcount(0), fps(30)
 	, subd_lv(0)
 	, m_selectMode(OBJECT_SELECT)
-	, loader("../../scene/obj/happy.obj")
+	, loader("../../scene/obj/bunny.obj")
 {
 	// Set surface format for current widget
 	QSurfaceFormat format;
