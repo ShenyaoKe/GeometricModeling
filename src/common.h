@@ -33,7 +33,9 @@
 
 using namespace std;
 
-
+using floats_t = vector<float>;
+using ui32s_t = vector<uint32_t>;
+using ui16s_t = vector<uint16_t>;
 /*
 typedef unsigned int uint;
 typedef unsigned short ushort;*/

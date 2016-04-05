@@ -153,15 +153,6 @@
     <None Include="point_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="wireframe_fs.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="wireframe_gs.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="wireframe_vs.glsl">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="quad_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
@@ -169,6 +160,15 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="quad_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="triangle_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="triangle_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="triangle_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

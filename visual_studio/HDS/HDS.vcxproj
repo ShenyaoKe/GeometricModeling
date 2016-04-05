@@ -72,7 +72,7 @@
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\lib\$(PlatformTarget);$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -188,9 +188,9 @@
     <None Include="point_vs.glsl" />
     <None Include="stylesheet.qss" />
     <None Include="vert.glsl" />
-    <None Include="wireframe_fs.glsl" />
-    <None Include="wireframe_gs.glsl" />
-    <None Include="wireframe_vs.glsl" />
+    <None Include="triangle_fs.glsl" />
+    <None Include="triangle_gs.glsl" />
+    <None Include="triangle_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
