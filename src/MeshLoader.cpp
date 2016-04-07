@@ -29,7 +29,7 @@ void MeshLoader::release()
 	polys.clear();
 }
 
-void MeshLoader::load(const char* filename)
+void MeshLoader::load_from_string(const char* filename)
 {
 	char* srcStr = readfile(filename);
 	cout << "finish reading file\n";
@@ -207,7 +207,7 @@ void MeshLoader::load_from_file(const char * filename)
 			switch (ft)
 			{
 			case VTN://111
-				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				while (endflg != '\n' && endflg != '\r' && endflg != EOF)
 				{
 					ungetc(endflg, fp);
 					fscanf(fp, "%d/%d/%d", indices, indices + 1, indices + 2);
@@ -216,7 +216,7 @@ void MeshLoader::load_from_file(const char * filename)
 				}
 				break;
 			case VT://011
-				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				while (endflg != '\n' && endflg != '\r' && endflg != EOF)
 				{
 					ungetc(endflg, fp);
 					fscanf(fp, "%d/%d", indices, indices + 1);
@@ -225,7 +225,7 @@ void MeshLoader::load_from_file(const char * filename)
 				}
 				break;
 			case VN://101
-				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				while (endflg != '\n' && endflg != '\r' && endflg != EOF)
 				{
 					ungetc(endflg, fp);
 					fscanf(fp, "%d//%d", indices, indices + 2);
@@ -234,7 +234,7 @@ void MeshLoader::load_from_file(const char * filename)
 				}
 				break;
 			case V://001
-				while (endflg != '\n' && endflg != '\r' && endflg != '\0')
+				while (endflg != '\n' && endflg != '\r' && endflg != EOF)
 				{
 					ungetc(endflg, fp);
 					fscanf(fp, "%d", indices);
