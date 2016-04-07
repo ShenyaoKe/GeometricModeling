@@ -41,7 +41,7 @@ public:
 	};
 
 	void release();
-	void load(const char* filename);
+	void load_from_string(const char* filename);
 	void load_from_file(const char* filename);
 
 	void exportVBO(floats_t* verts = nullptr,
