@@ -243,8 +243,8 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 /************************************************************************/
 void OGLViewer::resetCamera()
 {
-	Transform cam2w = Matrix4D::LookAt(Point3D(30, 10, 30), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
-	Transform pers = Transform(Matrix4D::Perspective(54.3,
+	Transform cam2w = Matrix4x4::LookAt(Point3f(30, 10, 30), Point3f(0.0, 0.0, 0.0), Vector3f(0, 1, 0));
+	Transform pers = Transform(Matrix4x4::Perspective(54.3,
 		width() / static_cast<double>(height()), 0.1, 500));
 	view_cam = new perspCamera(cam2w, pers);
 	view_cam->exportVBO(view_mat, proj_mat, nullptr);

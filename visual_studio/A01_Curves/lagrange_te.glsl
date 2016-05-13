@@ -1,6 +1,6 @@
-#version 430
+#version 450
 layout(isolines)in;
-//uniform mat4 proj_matrix;  // projection * view * model
+//uniform mat4 proj_mat;  // projection * view * model
 uniform int degree;
 
 void main()

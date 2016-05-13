@@ -17,9 +17,9 @@
 
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
+#include "Math/Matrix4x4.h"
 #include "Image/ImageData.h"
-#include "Geometry/Mesh.h"
-#include "Math/Matrix4D.h"
+#include "Geometry/TriangleMesh.h"
 #include "Camera/perspCamera.h"
 #include "hds_mesh.h"
 

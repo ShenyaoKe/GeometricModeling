@@ -1,4 +1,4 @@
-#version 430
+#version 450
 //layout(vertices = gl_MaxPatchVertices) out;
 layout(vertices = 9) out;
 

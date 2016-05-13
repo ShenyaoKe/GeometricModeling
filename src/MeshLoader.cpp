@@ -29,7 +29,7 @@ void MeshLoader::release()
 	polys.clear();
 }
 
-void MeshLoader::load(const char* filename)
+void MeshLoader::load_from_string(const char* filename)
 {
 	char* srcStr = readfile(filename);
 	cout << "finish reading file\n";
