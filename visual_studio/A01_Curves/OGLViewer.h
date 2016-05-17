@@ -3,48 +3,26 @@
 #define __OGLVIEWER__
 
 #include "GL/glew.h"
-
+#include "common.h"
 #include <QOpenGLWidget>
 #include <QKeyEvent>
 #include <QTimer>
 #include <QTime>
-//#include <QGLFunctions>
-#include <cstdio>
-#include <cstdlib>
-//#include <crtdefs>
-#include <vector>
+
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
-#include "Math/CGVector.h"
-//#include "Geometry/Mesh.h"
-#include "Math/Matrix4D.h"
-#include "Accel/BBox.h"
+#include "Math/Geometry.h"
+#include "Math/Matrix4x4.h"
+#include "Accel/Bounds.h"
 #include "curveIntersection.h"
-//#include "Camera/Camera.h"
-//#include "Accel/KdTreeAccel.h"
 
-static int point_proj_mat_loc;// Porjection matrix location
-static int curve_proj_mat_loc;// Porjection matrix location
-static GLint win_size_loc;
 static GLfloat proj_mat[16] = {
 	1,0,0,0,
 	0,1,0,0,
 	0,0,1,0,
-	0,0,0,1
+	-1,1,0,1
 };
 
-static GLfloat* points_verts = nullptr;// vertices vbo
-static GLfloat* points_colors;// Texture coordinates vbo
-
-//static int box_vbo_size;// Triangle face numbers
-static Matrix4D matrix;// Transform matrix
-
-static GLSLProgram* points_shader;// OpenGL shader program
-static GLSLProgram* intersection_shader;
-static GLSLProgram* curve_shaders[5];
-//static GLSLProgram* lagrange_shader;// OpenGL shader program
-static int vertex_position;// Uniform matrix location
-static int vertex_colour;// Uniform matrix location
 //////////////////////////////////////////////////////////////////////////
 enum OPERATION_MODE
 {
@@ -64,7 +42,6 @@ class OGLViewer : public QOpenGLWidget
 {
 	Q_OBJECT
 public:
-	//OGLViewer();
 	OGLViewer(QWidget *parent = nullptr);
 	~OGLViewer();
 
@@ -87,44 +64,51 @@ protected:
 	void initializeGL() Q_DECL_OVERRIDE;
 	void paintGL() Q_DECL_OVERRIDE;
 	void resizeGL(int w, int h) Q_DECL_OVERRIDE;
-	void paintEvent(QPaintEvent *e) Q_DECL_OVERRIDE;
 
 	void keyPressEvent(QKeyEvent *e) Q_DECL_OVERRIDE;
 	void mousePressEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QMouseEvent *e) Q_DECL_OVERRIDE;
 private:
-	void exportPointVBO(GLfloat* &ptsVBO);
+	void exportPointVBO(vector<GLfloat> &ptsVBO);
+	void updateBufferData();
 	// Intersection functions
 	// box-box
-	bool intersect(const vector<Point3D*> &cv0,
-		const vector<Point3D*> &cv1);
-	bool intersect(const vector<Point3D*> cv,
-		const Point3D* p0, const Point3D* p1);
-	bool intersect(const Point3D* p0, const Point3D* p1,
-		const Point3D* q0, const Point3D* q1);
-	bool internalIntersect(const vector<Point3D*> &cv);
-	void subdivBezier(const vector<Point3D*> &cvs,
-		vector<Point3D*> &lf_cvs, vector<Point3D*> &rt_cvs);
+	bool intersect(const vector<Point2f*> &cv0,
+		const vector<Point2f*> &cv1);
+	bool intersect(const vector<Point2f*> cv,
+		const Point2f* p0, const Point2f* p1);
+	bool intersect(const Point2f* p0, const Point2f* p1,
+		const Point2f* q0, const Point2f* q1);
+	bool internalIntersect(const vector<Point2f*> &cv);
 public:
-	vector<Point3D *> ctrl_points;
-	vector<Point3D *> intersections;
+	vector<Point2f *> ctrl_pts;
+	vector<Point2f *> intersects;// intersections
 protected:
 private:
-	int m_lastMousePos[2];
+	int lastMousePos[2];
 	GLfloat viewScale;
 	// Display Options
 	bool drawCtrlPts;
 	bool drawCurves;
-	bool drawIntersection;
+	bool drawIntx;// draw intersection
 private:
 	int cv_op_mode;// draw edit view
 	int cv_type;
 	GLint curve_degree;
-	GLint curve_degree_loc;
+	//GLint curve_degree_loc;
 	GLint curve_seg;
-	GLint curve_seg_loc;
+	//GLint curve_seg_loc;
 
-	Point3D* curPoint;
+	GLuint pts_vbo, pts_vao, curve_vao;
+	GLuint intx_vbo, intx_vao;
+
+	Point2f* curPoint;
+	vector<GLfloat> points_verts, intx_verts;// vertices vbo
+	unique_ptr<GLSLProgram> points_shader;// OpenGL shader program
+	unique_ptr<GLSLProgram> intx_shader;
+	shared_ptr<GLSLProgram> cvShaders[5];
+	shared_ptr<GLSLProgram> cvShader;
+
 	friend class MainWindow;
 };
 

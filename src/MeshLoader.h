@@ -5,30 +5,32 @@
 
 #include "common.h"
 
-struct PolyIndex
-{
-	uint32_t size;
-	ui32s_t v;
-	ui32s_t uv;
-	ui32s_t n;
-	void push_back(uint32_t* ids)
-	{
-		v.push_back(ids[0] - 1);
-		if (ids[1] > 0)
-		{
-			uv.push_back(ids[1] - 1);
-		}
-		if (ids[2] > 0)
-		{
-			uv.push_back(ids[2] - 1);
-		}
-	}
-};
+
 class MeshLoader
 {
 public:
 	MeshLoader(const char* filename);
 	~MeshLoader();
+
+	struct PolyIndex
+	{
+		uint32_t size;
+		ui32s_t v;
+		ui32s_t uv;
+		ui32s_t n;
+		void push_back(uint32_t* ids)
+		{
+			v.push_back(ids[0] - 1);
+			if (ids[1] > 0)
+			{
+				uv.push_back(ids[1] - 1);
+			}
+			if (ids[2] > 0)
+			{
+				uv.push_back(ids[2] - 1);
+			}
+		}
+	};
 	
 	enum index_t : uint8_t
 	{

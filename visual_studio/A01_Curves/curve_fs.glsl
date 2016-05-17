@@ -1,4 +1,4 @@
-#version 430
+#version 450
 /*in vec3 normal;*/
 out vec4 frag_color;
 void main () {
