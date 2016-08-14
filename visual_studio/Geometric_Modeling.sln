@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A01_Curves", "A01_Curves\A01_Curves.vcxproj", "{B12702AD-ABFB-343A-A199-8E24837244A3}"
 EndProject
@@ -18,6 +18,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A04_Simplification", "A04_Simplification\A04_Simplification.vcxproj", "{2FBF1B4D-1121-4124-B5EC-01C50C001956}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HDS", "HDS\HDS.vcxproj", "{550A1869-1D38-4C86-A406-7997A813F81E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CatmullRom", "CatmullRom\CatmullRom.vcxproj", "{D2A9BD7F-DF75-4250-A821-EF4220E43767}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,10 @@ Global
 		{550A1869-1D38-4C86-A406-7997A813F81E}.Debug|x64.ActiveCfg = Debug|x64
 		{550A1869-1D38-4C86-A406-7997A813F81E}.Release|x64.ActiveCfg = Release|x64
 		{550A1869-1D38-4C86-A406-7997A813F81E}.Release|x64.Build.0 = Release|x64
+		{D2A9BD7F-DF75-4250-A821-EF4220E43767}.Debug|x64.ActiveCfg = Debug|x64
+		{D2A9BD7F-DF75-4250-A821-EF4220E43767}.Debug|x64.Build.0 = Debug|x64
+		{D2A9BD7F-DF75-4250-A821-EF4220E43767}.Release|x64.ActiveCfg = Release|x64
+		{D2A9BD7F-DF75-4250-A821-EF4220E43767}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
