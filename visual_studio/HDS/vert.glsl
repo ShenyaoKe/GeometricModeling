@@ -1,7 +1,7 @@
 #version 430
-in layout(location = 0) vec3 vp;
-in layout(location = 1) vec3 vn;
-in layout(location = 2) vec2 uv;
+layout(location = 0) in vec3 vp;
+layout(location = 1) in vec3 vn;
+layout(location = 2) in vec2 uv;
 
 uniform mat4 view_matrix, proj_matrix;
 
