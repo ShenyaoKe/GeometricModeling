@@ -17,19 +17,20 @@
 #include "OpenGL_Utils/GLSLProgram.h"
 #include "Math/MathUtil.h"
 #include "Image/ImageData.h"
-#include "Geometry/Mesh.h"
-#include "Math/Matrix4D.h"
-#include "Camera/Camera.h"
+#include "Geometry/TriangleMesh.h"
+#include "Math/Matrix4x4.h"
+#include "Camera/perspCamera.h"
 //#include "Accel/KdTreeAccel.h"
 #include "hds_mesh.h"
 #include "HairMesh.h"
 
 
-static Matrix4D matrix;// Transform matrix
+//static Matrix4D matrix;// Transform matrix
 
+/*
 static GLfloat model_mat[16];// Uniform matrix buffer
 static GLfloat view_mat[16];
-static GLfloat proj_mat[16];
+static GLfloat proj_mat[16];*/
 //////////////////////////////////////////////////////////////////////////
 // Acceleration
 //////////////////////////////////////////////////////////////////////////
@@ -101,7 +102,7 @@ signals:
 public:
 	double process_fps;
 protected:
-	perspCamera *view_cam;
+	perspCamera* view_cam;
 	GLint m_Select;
 private:// OpenGL variables
 	friend class MainWindow;
@@ -150,7 +151,7 @@ private: //Scene data
 
 private:
 	vector<Shape*> triangleList;
-	Mesh* collisionMesh;
+	TriangleMesh* collisionMesh;
 	KdTreeAccel *mytree;
 private: //Shaders
 	// Scene Object Shader

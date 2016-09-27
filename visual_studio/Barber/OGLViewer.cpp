@@ -27,10 +27,10 @@ OGLViewer::OGLViewer(QWidget *parent)
 	// Read obj file
 #ifdef _DEBUG
 	charMesh = new HDS_Mesh("../../scene/obj/head.obj");
-	collisionMesh = new Mesh("../../scene/obj/head_tri.obj");
+	collisionMesh = new TriangleMesh("../../scene/obj/head_tri.obj");
 #else
 	charMesh = new HDS_Mesh("head.obj");
-	collisionMesh = new Mesh("head_tri.obj");
+	collisionMesh = new TriangleMesh("head_tri.obj");
 #endif
 	hairMesh = new HairMesh(charMesh);
 
@@ -49,11 +49,10 @@ OGLViewer::~OGLViewer()
 }
 void OGLViewer::resetCamera()
 {
-	Transform cam2w = lookAt(Point3D(20, 16, 20), Point3D(0.0, 0.0, 0.0), Point3D(0, 1, 0));
-	Transform pers = Transform(setPerspective(54,
+	Transform cam2w = Matrix4x4::LookAt(Point3f(20, 16, 20), Point3f(0.0, 0.0, 0.0), Vector3f(0, 1, 0));
+	Transform pers = Transform(Matrix4x4::Perspective(54,
 		width() / static_cast<double>(height()), 0.1, 100));
 	view_cam = new perspCamera(cam2w, pers);
-	view_cam->exportVBO(view_mat, proj_mat, nullptr);
 	//update();
 }
 void OGLViewer::initializeGL()
@@ -225,8 +224,8 @@ void OGLViewer::renderUidBuffer()
 	// Apply uniform matrix
 	glUniform1i((*shader_uid)("mode"), m_selectMode);
 	//glUniformMatrix4fv((*shader_id)("model_matrix"), 1, GL_FALSE, model_mat);
-	glUniformMatrix4fv((*shader_uid)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*shader_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	glUniformMatrix4fv((*shader_uid)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+	glUniformMatrix4fv((*shader_uid)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 	glDrawElements(GL_LINES_ADJACENCY, char_idxs.size(), GL_UNSIGNED_INT, 0);
 
 	if (m_selectMode != OBJECT_SELECT && !hairMesh->empty())
@@ -236,8 +235,8 @@ void OGLViewer::renderUidBuffer()
 		// Draw each stroke
 		shader_stroke_uid->use_program();
 		glUniform1i((*shader_stroke_uid)("mode"), m_selectMode);
-		glUniformMatrix4fv((*shader_stroke_uid)("view_matrix"), 1, GL_FALSE, view_mat);
-		glUniformMatrix4fv((*shader_stroke_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
+		glUniformMatrix4fv((*shader_stroke_uid)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+		glUniformMatrix4fv((*shader_stroke_uid)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 		for (int i = 0; i < hmsh_idx_offset.size() - 1; i++)
 		{
 			glUniform1i((*shader_stroke_uid)("strokeid"), i);
@@ -256,8 +255,8 @@ void OGLViewer::renderUidBuffer()
 			{
 				shader_layer_uid->use_program();
 				glUniform1i((*shader_layer_uid)("mode"), m_selectMode);
-				glUniformMatrix4fv((*shader_layer_uid)("view_matrix"), 1, GL_FALSE, view_mat);
-				glUniformMatrix4fv((*shader_layer_uid)("proj_matrix"), 1, GL_FALSE, proj_mat);
+				glUniformMatrix4fv((*shader_layer_uid)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+				glUniformMatrix4fv((*shader_layer_uid)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 				glLineWidth(20);
 				glDrawArrays(GL_LINES_ADJACENCY, hmsh_vtx_offset[curStrokeID],
 					hmsh_idx_offset[curStrokeID + 1] - hmsh_idx_offset[curStrokeID]);
@@ -321,8 +320,8 @@ void OGLViewer::paintGL()
 
 	// Apply uniform matrix
 	//glUniformMatrix4fv((*shader)("model_matrix"), 1, GL_FALSE, sphere_model_mat);
-	glUniformMatrix4fv((*shader_obj)("view_matrix"), 1, GL_FALSE, view_mat);
-	glUniformMatrix4fv((*shader_obj)("proj_matrix"), 1, GL_FALSE, proj_mat);
+	glUniformMatrix4fv((*shader_obj)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+	glUniformMatrix4fv((*shader_obj)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 	int highlightID = m_selectMode == OBJECT_SELECT ? m_Select : -1;
 	glUniform1i((*shader_obj)("sel_id"), highlightID);
 	
@@ -344,8 +343,8 @@ void OGLViewer::paintGL()
 			shader_hairmesh->use_program();
 
 			glUniform1f((*shader_hairmesh)("opacity"), hair_mesh_opacity);
-			glUniformMatrix4fv((*shader_hairmesh)("view_matrix"), 1, GL_FALSE, view_mat);
-			glUniformMatrix4fv((*shader_hairmesh)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glUniformMatrix4fv((*shader_hairmesh)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+			glUniformMatrix4fv((*shader_hairmesh)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 
 			for (int i = 0; i < hmsh_idx_offset.size() - 1; i++)
 			{
@@ -365,9 +364,14 @@ void OGLViewer::paintGL()
 		{
 			glLineWidth(2.0);
 			shader_wireframe->use_program();
-			glUniformMatrix4fv((*shader_wireframe)("view_matrix"), 1, GL_FALSE, view_mat);
-			glUniformMatrix4fv((*shader_wireframe)("proj_matrix"), 1, GL_FALSE, proj_mat);
-			glDrawElements(GL_LINES_ADJACENCY, hmsh_idxs.size(), GL_UNSIGNED_INT, 0);
+			glUniformMatrix4fv((*shader_wireframe)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+			glUniformMatrix4fv((*shader_wireframe)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
+			glDrawElements(
+				GL_LINES_ADJACENCY,
+				hmsh_idxs.size(),
+				GL_UNSIGNED_INT,
+				0
+			);
 		}
 
 		/************************************************************************/
@@ -381,8 +385,8 @@ void OGLViewer::paintGL()
 
 			shader_sel_layer->use_program();
 			glLineWidth(2);
-			glUniformMatrix4fv((*shader_sel_layer)("view_matrix"), 1, GL_FALSE, view_mat);
-			glUniformMatrix4fv((*shader_sel_layer)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glUniformMatrix4fv((*shader_sel_layer)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+			glUniformMatrix4fv((*shader_sel_layer)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 			glDrawArrays(GL_LINES_ADJACENCY, startID, 4);
 		}
 		/************************************************************************/
@@ -393,8 +397,8 @@ void OGLViewer::paintGL()
 			glLineWidth(1);
 
 			shader_hairstroke->use_program();
-			glUniformMatrix4fv((*shader_hairstroke)("view_matrix"), 1, GL_FALSE, view_mat);
-			glUniformMatrix4fv((*shader_hairstroke)("proj_matrix"), 1, GL_FALSE, proj_mat);
+			glUniformMatrix4fv((*shader_hairstroke)("view_matrix"), 1, GL_FALSE, view_cam->world_to_cam());
+			glUniformMatrix4fv((*shader_hairstroke)("proj_matrix"), 1, GL_FALSE, view_cam->cam_to_screen());
 			glUniform1ui((*shader_hairstroke)("rootColor"), hairRootColor.rgb());
 			glUniform1ui((*shader_hairstroke)("tipColor"), hairTipColor.rgb());
 			glUniform1ui((*shader_hairstroke)("scatterColor"), hairScatterColor.rgb());
@@ -439,7 +443,6 @@ void OGLViewer::resizeGL(int w, int h)
 	// Widget resize operations
 	view_cam->resizeViewport(width() / static_cast<double>(height()));
 	view_cam->setResolution(width(), height());
-	view_cam->exportVBO(nullptr, proj_mat, nullptr);
 }
 void OGLViewer::generateHairCage()
 {
@@ -754,14 +757,12 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 		if (e->buttons() == Qt::LeftButton)
 		{
 			view_cam->rotate(dy * 0.25, -dx * 0.25, 0.0);
-			view_cam->exportVBO(view_mat, nullptr, nullptr);
 		}
 		else if (e->buttons() == Qt::RightButton)
 		{
 			if (dx != e->x() && dy != e->y())
 			{
 				view_cam->zoom(0.0, 0.0, dx * 0.05);
-				view_cam->exportVBO(view_mat, nullptr, nullptr);
 			}
 		}
 		else if (e->buttons() == Qt::MidButton)
@@ -769,7 +770,6 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 			if (dx != e->x() && dy != e->y())
 			{
 				view_cam->zoom(dx * 0.05, dy * 0.05, 0.0);
-				view_cam->exportVBO(view_mat, nullptr, nullptr);
 			}
 		}
 		break;
@@ -789,7 +789,7 @@ void OGLViewer::mouseMoveEvent(QMouseEvent *e)
 				{
 					break;
 				}
-				QVector4D vec = QMatrix4x4(view_mat) * QVector4D(-dx, -dy, 0, 0);
+				QVector4D vec = QMatrix4x4(view_cam->world_to_cam()) * QVector4D(-dx, -dy, 0, 0);
 				auto curLayer = hairMesh->layers[curStrokeID];
 				curLayer->translate(curLayerID,
 					vec.toVector3D() * scale_unit * 10, m_operationAxis);
